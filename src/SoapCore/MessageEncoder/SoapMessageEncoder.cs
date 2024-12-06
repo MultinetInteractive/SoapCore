@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Net.Http.Headers;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
@@ -15,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace SoapCore.MessageEncoder
 {
@@ -137,9 +136,18 @@ namespace SoapCore.MessageEncoder
 				throw new ArgumentNullException(nameof(stream));
 			}
 
-			var ms = new MemoryStream();
-			await stream.CopyToAsync(ms);
-			ms.Seek(0, SeekOrigin.Begin);
+			Stream ms;
+			if (stream is FileBufferingReadStream)
+			{
+				ms = stream;
+			}
+			else
+			{
+				ms = new MemoryStream();
+				await stream.CopyToAsync(ms);
+				ms.Seek(0, SeekOrigin.Begin);
+			}
+
 			XmlReader reader;
 
 			var readEncoding = SoapMessageEncoderDefaults.ContentTypeToEncoding(contentType);
