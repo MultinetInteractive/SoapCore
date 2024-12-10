@@ -246,9 +246,15 @@ namespace SoapCore
 					}
 				}
 			}
+
 #if !NETCOREAPP3_0_OR_GREATER
 			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #else
+			if (httpContext.Request.Body is FileBufferingReadStream)
+			{
+				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			}
+
 			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #endif
 		}
