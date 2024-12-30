@@ -13,6 +13,11 @@ namespace SoapCore.ServiceModel
 			ServiceType = serviceType;
 			ServiceKnownTypes = serviceType.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false);
 
+			foreach (Type type in serviceType.Assembly.GetTypes())
+			{
+				ServiceKnownTypes = ServiceKnownTypes.Concat(type.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false));
+			}
+
 			var types = Enumerable.Empty<Type>().Concat(ServiceType.GetInterfaces());
 			types = types.Concat(new[] { ServiceType });
 
