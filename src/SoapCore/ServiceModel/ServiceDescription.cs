@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,12 +12,13 @@ namespace SoapCore.ServiceModel
 		public ServiceDescription(Type serviceType, bool generateSoapActionWithoutContractName)
 		{
 			ServiceType = serviceType;
-			ServiceKnownTypes = serviceType.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false);
+			//ServiceKnownTypes = serviceType.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false);
 
-			foreach (Type type in serviceType.Assembly.GetTypes())
-			{
-				ServiceKnownTypes = ServiceKnownTypes.Concat(type.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false));
-			}
+			ServiceKnownTypes = serviceType.Assembly.GetTypes()
+				.SelectMany(type => type.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false))
+				.GroupBy(t => t.TypeId)
+				.Select(t => t.First())
+				.ToArray();
 
 			var types = Enumerable.Empty<Type>().Concat(ServiceType.GetInterfaces());
 			types = types.Concat(new[] { ServiceType });
