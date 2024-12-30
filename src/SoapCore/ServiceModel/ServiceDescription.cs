@@ -15,6 +15,7 @@ namespace SoapCore.ServiceModel
 			//ServiceKnownTypes = serviceType.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false);
 
 			ServiceKnownTypes = serviceType.Assembly.GetTypes()
+				.Where(t => t.Namespace == serviceType.Namespace)
 				.SelectMany(type => type.GetCustomAttributes<ServiceKnownTypeAttribute>(inherit: false))
 				.GroupBy(t => t.TypeId)
 				.Select(t => t.First())
