@@ -36,6 +36,9 @@ namespace SoapCore.Tests.MessageInspectors
 				case InspectorStyle.MessageInspector2:
 					services.AddSoapMessageInspector(new MessageInspector2Mock());
 					break;
+				case InspectorStyle.MessageInspector2NoException:
+					services.AddSoapMessageInspector(new MessageInspector2MockNoException());
+					break;
 			}
 
 			services.AddMvc();
