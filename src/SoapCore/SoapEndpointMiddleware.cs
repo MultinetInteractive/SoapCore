@@ -1,18 +1,3 @@
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using SoapCore.DocumentationWriter;
-using SoapCore.Extensibility;
-using SoapCore.MessageEncoder;
-using SoapCore.Meta;
-using SoapCore.Serializer;
-using SoapCore.ServiceModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,6 +13,22 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Threading.Tasks;
 using System.Xml;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
+using SoapCore.DocumentationWriter;
+using SoapCore.Extensibility;
+using SoapCore.MessageEncoder;
+using SoapCore.Meta;
+using SoapCore.Serializer;
+using SoapCore.ServiceModel;
 
 namespace SoapCore
 {
@@ -261,7 +262,8 @@ namespace SoapCore
 
 		private async Task ProcessMeta(HttpContext httpContext, bool showDocumentation)
 		{
-			var baseUrl = httpContext.Request.Scheme + "://" + httpContext.Request.Host + httpContext.Request.PathBase + httpContext.Request.Path;
+			var scheme = string.IsNullOrEmpty(_options.SchemeOverride) ? httpContext.Request.Scheme : _options.SchemeOverride;
+			var baseUrl = scheme + "://" + httpContext.Request.Host + httpContext.Request.PathBase + httpContext.Request.Path;
 			var xmlNamespaceManager = GetXmlNamespaceManager(null);
 			var bindingName = !string.IsNullOrWhiteSpace(_options.EncoderOptions[0].BindingName) ? _options.EncoderOptions[0].BindingName : "BasicHttpBinding_" + _service.GeneralContract.Name;
 			var bodyWriter = _options.SoapSerializer == SoapSerializer.XmlSerializer
@@ -292,6 +294,7 @@ namespace SoapCore
 				{
 					httpContext.Response.ContentLength = documentation.Length;
 				}
+
 				await httpContext.Response.WriteAsync(documentation);
 
 				return;
@@ -463,7 +466,6 @@ namespace SoapCore
 			XmlWriter writer = XmlWriter.Create(ms, new XmlWriterSettings
 			{
 				Encoding = DefaultEncodings.UTF8,
-
 			});
 			XmlDictionaryWriter dictionaryWriter = XmlDictionaryWriter.CreateDictionaryWriter(writer);
 

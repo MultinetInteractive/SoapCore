@@ -132,7 +132,6 @@ namespace SoapCore
 
 		public WsdlFileOptions WsdlFileOptions { get; set; }
 
-
 		/// <summary>
 		/// Get or sets a value indicating the use of custom serializer, use for if multiple custom serializer used to services
 		/// </summary>
@@ -156,6 +155,13 @@ namespace SoapCore
 		/// Default is true.
 		/// </summary>
 		public bool NormalizeNewLines { get; set; } = true;
+
+		/// <summary>
+		/// Can be used to override the HTTP Scheme in the generated service description. This can be useful
+		/// if you are behind a firewall and the firewall sets the X-Forwarded-Host header, but the
+		/// internal HTTP scheme is not the same as the external.
+		/// </summary>
+		public string SchemeOverride { get; set; }
 
 		public void UseCustomSerializer<TCustomSerializer>()
 			where TCustomSerializer : class, IXmlSerializationHandler
