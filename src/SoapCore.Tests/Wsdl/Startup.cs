@@ -33,20 +33,8 @@ namespace SoapCore.Tests.Wsdl
 #if !NETCOREAPP3_0_OR_GREATER
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
 		{
-			app.UseSoapEndpoint(_serviceType, "/Service.svc", new SoapEncoderOptions(), SoapSerializer.DataContractSerializer);
-			if (string.IsNullOrEmpty(_schemeOverride))
-			{
-				app.UseSoapEndpoint(_serviceType, "/Service.asmx", new SoapEncoderOptions(), SoapSerializer.XmlSerializer);
-			}
-			else
-			{
-				app.UseSoapEndpoint(_serviceType, soapCoreOptions =>
-				{
-					soapCoreOptions.Path = "/Service.asmx";
-					soapCoreOptions.SoapSerializer = SoapSerializer.XmlSerializer;
-					soapCoreOptions.SchemeOverride = _schemeOverride;
-				});
-			}
+			app.UseSoapEndpoint(_serviceType, "/Service.svc", new SoapEncoderOptions(), SoapSerializer.DataContractSerializer, schemeOverride: _schemeOverride);
+			app.UseSoapEndpoint(_serviceType, "/Service.asmx", new SoapEncoderOptions(), SoapSerializer.XmlSerializer, schemeOverride: _schemeOverride);
 
 			app.UseMvc();
 		}
@@ -57,21 +45,8 @@ namespace SoapCore.Tests.Wsdl
 
 			app.UseEndpoints(x =>
 			{
-				x.UseSoapEndpoint(_serviceType, "/Service.svc", new SoapEncoderOptions(), SoapSerializer.DataContractSerializer);
-
-				if (string.IsNullOrEmpty(_schemeOverride))
-				{
-					x.UseSoapEndpoint(_serviceType, "/Service.asmx", new SoapEncoderOptions(), SoapSerializer.XmlSerializer);
-				}
-				else
-				{
-					x.UseSoapEndpoint(_serviceType, soapCoreOptions =>
-					{
-						soapCoreOptions.Path = "/Service.asmx";
-						soapCoreOptions.SoapSerializer = SoapSerializer.XmlSerializer;
-						soapCoreOptions.SchemeOverride = _schemeOverride;
-					});
-				}
+				x.UseSoapEndpoint(_serviceType, "/Service.svc", new SoapEncoderOptions(), SoapSerializer.DataContractSerializer, schemeOverride: _schemeOverride);
+				x.UseSoapEndpoint(_serviceType, "/Service.asmx", new SoapEncoderOptions(), SoapSerializer.XmlSerializer, schemeOverride: _schemeOverride);
 			});
 		}
 #endif
