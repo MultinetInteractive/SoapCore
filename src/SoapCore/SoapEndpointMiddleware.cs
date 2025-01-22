@@ -1,18 +1,3 @@
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using SoapCore.DocumentationWriter;
-using SoapCore.Extensibility;
-using SoapCore.MessageEncoder;
-using SoapCore.Meta;
-using SoapCore.Serializer;
-using SoapCore.ServiceModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,6 +13,21 @@ using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Threading.Tasks;
 using System.Xml;
+using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
+using SoapCore.DocumentationWriter;
+using SoapCore.Extensibility;
+using SoapCore.MessageEncoder;
+using SoapCore.Meta;
+using SoapCore.Serializer;
+using SoapCore.ServiceModel;
 
 namespace SoapCore
 {
@@ -292,6 +292,7 @@ namespace SoapCore
 				{
 					httpContext.Response.ContentLength = documentation.Length;
 				}
+
 				await httpContext.Response.WriteAsync(documentation);
 
 				return;
@@ -333,29 +334,7 @@ namespace SoapCore
 			}
 			catch (Exception ex)
 			{
-				var status = StatusCodes.Status500InternalServerError;
-				if (ex is TargetInvocationException targetInvocationException)
-				{
-					ex = targetInvocationException.InnerException;
-				}
-				else if (ex is AuthenticationException)
-				{
-					status = StatusCodes.Status401Unauthorized;
-				}
-				else if (ex is UnauthorizedAccessException)
-				{
-					status = StatusCodes.Status403Forbidden;
-				}
-				else if (ex is XmlException)
-				{
-					status = StatusCodes.Status400BadRequest;
-				}
-				else if (ex is ConnectionResetException)
-				{
-					status = StatusCodes.Status400BadRequest;
-				}
-
-				responseMessage = CreateErrorResponseMessage(ex, status, serviceProvider, requestMessage, messageEncoder, httpContext);
+				responseMessage = CreateErrorResponseMessage(ex, serviceProvider, requestMessage, messageEncoder, httpContext);
 			}
 
 			if (responseMessage != null)
@@ -463,7 +442,6 @@ namespace SoapCore
 			XmlWriter writer = XmlWriter.Create(ms, new XmlWriterSettings
 			{
 				Encoding = DefaultEncodings.UTF8,
-
 			});
 			XmlDictionaryWriter dictionaryWriter = XmlDictionaryWriter.CreateDictionaryWriter(writer);
 
@@ -573,6 +551,14 @@ namespace SoapCore
 				httpContext.Response.Headers["SOAPAction"] = responseMessage.Headers.Action;
 
 				correlationObjects2.ForEach(mi => mi.inspector.BeforeSendReply(ref responseMessage, _service, mi.correlationObject));
+			}
+			catch (Exception ex)
+			{
+				responseMessage = CreateErrorResponseMessage(ex, serviceProvider, requestMessage, messageEncoder, httpContext);
+
+				correlationObjects2.ForEach(mi => mi.inspector.BeforeSendReply(ref responseMessage, _service, mi.correlationObject));
+
+				throw;
 			}
 			finally
 			{
@@ -926,6 +912,38 @@ namespace SoapCore
 			}
 
 			arguments[parameterInfo.Index] = wrapperObject;
+		}
+
+		private Message CreateErrorResponseMessage(
+			Exception exception,
+			IServiceProvider serviceProvider,
+			Message requestMessage,
+			SoapMessageEncoder messageEncoder,
+			HttpContext httpContext)
+		{
+			var status = StatusCodes.Status500InternalServerError;
+			if (exception is TargetInvocationException targetInvocationException)
+			{
+				exception = targetInvocationException.InnerException;
+			}
+			else if (exception is AuthenticationException)
+			{
+				status = StatusCodes.Status401Unauthorized;
+			}
+			else if (exception is UnauthorizedAccessException)
+			{
+				status = StatusCodes.Status403Forbidden;
+			}
+			else if (exception is XmlException)
+			{
+				status = StatusCodes.Status400BadRequest;
+			}
+			else if (exception is ConnectionResetException)
+			{
+				status = StatusCodes.Status400BadRequest;
+			}
+
+			return CreateErrorResponseMessage(exception, status, serviceProvider, requestMessage, messageEncoder, httpContext);
 		}
 
 		/// <summary>
