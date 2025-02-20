@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace SoapCore.Benchmark
 {
 	[MemoryDiagnoser]
-	[SimpleJob(targetCount: 5)]
+	[SimpleJob(iterationCount: 5)]
 	public class EchoBench
 	{
 		// 0 measures overhead of creating host
