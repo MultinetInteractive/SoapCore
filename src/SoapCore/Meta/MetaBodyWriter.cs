@@ -36,21 +36,6 @@ namespace SoapCore.Meta
 		private readonly bool _buildMicrosoftGuid = false;
 		private IWsdlOperationNameGenerator _wsdlOperationNameGenerator;
 
-
-		[Obsolete]
-		public MetaBodyWriter(ServiceDescription service, string baseUrl, Binding binding, XmlNamespaceManager xmlNamespaceManager = null)
-			: this(
-				service,
-				baseUrl,
-				xmlNamespaceManager ?? new XmlNamespaceManager(new NameTable()),
-				binding?.Name ?? "BasicHttpBinding_" + service.GeneralContract.Name,
-				new[] { new SoapBindingInfo(binding.MessageVersion ?? MessageVersion.None, null, null) },
-				false,
-				new DefaultWsdlOperationNameGenerator())
-
-		{
-		}
-
 		public MetaBodyWriter(ServiceDescription service, string baseUrl, XmlNamespaceManager xmlNamespaceManager, string bindingName, SoapBindingInfo[] soapBindings, bool buildMicrosoftGuid, IWsdlOperationNameGenerator wsdlOperationNameGenerator) : base(isBuffered: true)
 		{
 			_service = service;

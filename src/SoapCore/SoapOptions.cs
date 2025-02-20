@@ -16,16 +16,7 @@ namespace SoapCore
 		public SoapSerializer SoapSerializer { get; set; }
 		public bool CaseInsensitivePath { get; set; }
 		public ISoapModelBounder SoapModelBounder { get; set; }
-
-		[Obsolete]
-		public Binding Binding { get; set; }
-
 		public bool UseBasicAuthentication { get; set; }
-
-		[Obsolete]
-		public int BufferThreshold { get; set; }
-		[Obsolete]
-		public long BufferLimit { get; set; }
 
 		/// <summary>
 		/// Gets or sets a value indicating whether publication of service metadata on HTTP GET request, and invocation of service operation by GET, is activated
@@ -115,21 +106,6 @@ namespace SoapCore
 				NormalizeNewLines = opt.NormalizeNewLines,
 				SchemeOverride = opt.SchemeOverride,
 			};
-
-#pragma warning disable CS0612 // Type or member is obsolete
-			if (opt.Binding is object)
-			{
-				if (opt.Binding.HasBasicAuth())
-				{
-					options.UseBasicAuthentication = true;
-				}
-
-				if (options.EncoderOptions is null)
-				{
-					opt.EncoderOptions = opt.Binding.ToEncoderOptions();
-				}
-			}
-#pragma warning restore CS0612 // Type or member is obsolete
 
 			return options;
 		}
