@@ -18,23 +18,23 @@ namespace SoapCore
 {
 	public static class SoapEndpointExtensions
 	{
-		public static IApplicationBuilder UseSoapEndpoint<T>(this IApplicationBuilder builder, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint<T>(this IApplicationBuilder builder, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return builder.UseSoapEndpoint<CustomMessage>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return builder.UseSoapEndpoint<CustomMessage>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IApplicationBuilder UseSoapEndpoint<T, T_MESSAGE>(this IApplicationBuilder builder, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint<T, T_MESSAGE>(this IApplicationBuilder builder, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
-			return builder.UseSoapEndpoint<T_MESSAGE>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return builder.UseSoapEndpoint<T_MESSAGE>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IApplicationBuilder UseSoapEndpoint(this IApplicationBuilder builder, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint(this IApplicationBuilder builder, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return builder.UseSoapEndpoint<CustomMessage>(type, path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return builder.UseSoapEndpoint<CustomMessage>(type, path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IApplicationBuilder UseSoapEndpoint<T_MESSAGE>(this IApplicationBuilder builder, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint<T_MESSAGE>(this IApplicationBuilder builder, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
 			return builder.UseSoapEndpoint<T_MESSAGE>(type, options =>
@@ -47,15 +47,16 @@ namespace SoapCore
 				options.IndentXml = indentXml;
 				options.OmitXmlDeclaration = omitXmlDeclaration;
 				options.WsdlFileOptions = wsdlFileOptions;
+				options.SchemeOverride = schemeOverride;
 			});
 		}
 
-		public static IApplicationBuilder UseSoapEndpoint<T>(this IApplicationBuilder builder, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint<T>(this IApplicationBuilder builder, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return builder.UseSoapEndpoint<T, CustomMessage>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, indentXml, omitXmlDeclaration);
+			return builder.UseSoapEndpoint<T, CustomMessage>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IApplicationBuilder UseSoapEndpoint<T, T_MESSAGE>(this IApplicationBuilder builder, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IApplicationBuilder UseSoapEndpoint<T, T_MESSAGE>(this IApplicationBuilder builder, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
 			return builder.UseSoapEndpoint<T_MESSAGE>(typeof(T), options =>
@@ -67,6 +68,7 @@ namespace SoapCore
 				options.SoapModelBounder = soapModelBounder;
 				options.IndentXml = indentXml;
 				options.OmitXmlDeclaration = omitXmlDeclaration;
+				options.SchemeOverride = schemeOverride;
 			});
 		}
 
@@ -98,23 +100,23 @@ namespace SoapCore
 		}
 
 #if NETCOREAPP3_0_OR_GREATER
-		public static IEndpointConventionBuilder UseSoapEndpoint<T>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return routes.UseSoapEndpoint<T, CustomMessage>(path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return routes.UseSoapEndpoint<T, CustomMessage>(path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
-			return routes.UseSoapEndpoint<T_MESSAGE>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return routes.UseSoapEndpoint<T_MESSAGE>(typeof(T), path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint(this IEndpointRouteBuilder routes, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint(this IEndpointRouteBuilder routes, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return routes.UseSoapEndpoint<CustomMessage>(type, path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return routes.UseSoapEndpoint<CustomMessage>(type, path, encoder, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint<T_MESSAGE>(this IEndpointRouteBuilder routes, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T_MESSAGE>(this IEndpointRouteBuilder routes, Type type, string path, SoapEncoderOptions encoder, SoapSerializer serializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
 			return routes.UseSoapEndpoint<T_MESSAGE>(type, options =>
@@ -127,21 +129,22 @@ namespace SoapCore
 				options.WsdlFileOptions = wsdlFileOptions;
 				options.IndentXml = indentXml;
 				options.OmitXmlDeclaration = omitXmlDeclaration;
+				options.SchemeOverride = schemeOverride;
 			});
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint<T>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		{
-			return routes.UseSoapEndpoint<T, CustomMessage>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration);
+			return routes.UseSoapEndpoint<T, CustomMessage>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, wsdlFileOptions, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 			where T_MESSAGE : CustomMessage, new()
 		{
-			return routes.UseSoapEndpoint<T, T_MESSAGE>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, null, indentXml, omitXmlDeclaration);
+			return routes.UseSoapEndpoint<T, T_MESSAGE>(path, encoders, serializer, caseInsensitivePath, soapModelBounder, null, indentXml, omitXmlDeclaration, schemeOverride);
 		}
 
-		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true)
+		public static IEndpointConventionBuilder UseSoapEndpoint<T, T_MESSAGE>(this IEndpointRouteBuilder routes, string path, SoapEncoderOptions[] encoders, SoapSerializer serializer = SoapSerializer.DataContractSerializer, bool caseInsensitivePath = false, ISoapModelBounder soapModelBounder = null, WsdlFileOptions wsdlFileOptions = null, bool indentXml = true, bool omitXmlDeclaration = true, string schemeOverride = null)
 		where T_MESSAGE : CustomMessage, new()
 		{
 			return routes.UseSoapEndpoint<T, T_MESSAGE>(opt =>
@@ -154,6 +157,7 @@ namespace SoapCore
 				opt.WsdlFileOptions = wsdlFileOptions;
 				opt.IndentXml = indentXml;
 				opt.OmitXmlDeclaration = omitXmlDeclaration;
+				opt.SchemeOverride = schemeOverride;
 			});
 		}
 
@@ -283,7 +287,6 @@ namespace SoapCore
 			serviceCollection.Add(new ServiceDescriptor(typeof(ISoapMessageProcessor), typeof(TProcessor), lifetime));
 			return serviceCollection;
 		}
-
 
 		public static IServiceCollection AddCustomSoapMessageSerializer(this IServiceCollection serviceCollection, IXmlSerializationHandler messageSerializer)
 		{

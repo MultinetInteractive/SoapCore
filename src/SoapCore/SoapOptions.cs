@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.ServiceModel.Channels;
 using System.Xml;
-using SoapCore.ServiceModel;
 using SoapCore.Extensibility;
 using SoapCore.Meta;
+using SoapCore.ServiceModel;
 
 namespace SoapCore
 {
@@ -69,6 +69,8 @@ namespace SoapCore
 		public bool NormalizeNewLines { get; set; } = true;
 		public IWsdlOperationNameGenerator WsdlOperationNameGenerator { get; set; } = new DefaultWsdlOperationNameGenerator();
 
+		public string SchemeOverride { get; set; }
+
 		[Obsolete]
 		public static SoapOptions FromSoapCoreOptions<T>(SoapCoreOptions opt)
 		{
@@ -102,6 +104,7 @@ namespace SoapCore
 				UseMicrosoftGuid = opt.UseMicrosoftGuid,
 				GenerateSoapActionWithoutContractName = opt.GenerateSoapActionWithoutContractName,
 				NormalizeNewLines = opt.NormalizeNewLines,
+				SchemeOverride = opt.SchemeOverride,
 			};
 
 			return options;

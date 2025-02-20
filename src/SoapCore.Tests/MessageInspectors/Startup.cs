@@ -14,16 +14,26 @@ namespace SoapCore.Tests.MessageInspectors
 		public Startup(IConfiguration configuration)
 		{
 			Configuration = configuration;
+			InspectorStyle = configuration.GetValue<InspectorStyle>("InspectorStyle");
 		}
 
 		public IConfiguration Configuration { get; }
+		public InspectorStyle InspectorStyle { get; }
 
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddSoapCore();
 			services.TryAddSingleton<TestService>();
 
-			services.AddSoapMessageInspector(new MessageInspector2Mock());
+			switch (InspectorStyle)
+			{
+				case InspectorStyle.MessageInspector2:
+					services.AddSoapMessageInspector(new MessageInspector2Mock());
+					break;
+				case InspectorStyle.MessageInspector2NoException:
+					services.AddSoapMessageInspector(new MessageInspector2MockNoException());
+					break;
+			}
 
 			services.AddMvc();
 		}

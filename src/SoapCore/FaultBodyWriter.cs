@@ -107,6 +107,7 @@ namespace SoapCore
 				</s:Body>
 			</s:Envelope>
 			*/
+			var actor = default(string);
 			if (_exception is FaultException)
 			{
 				var faultException = (FaultException)_exception;
@@ -126,11 +127,7 @@ namespace SoapCore
 					writer.WriteElementString("faultcode", "s:Client");
 				}
 
-				var actor = faultException.CreateMessageFault()?.Actor;
-				if (!string.IsNullOrWhiteSpace(actor))
-                {
-                    writer.WriteElementString ("faultactor", actor);
-                }
+				actor = faultException.CreateMessageFault()?.Actor;
 			}
 			else
 			{
@@ -138,6 +135,11 @@ namespace SoapCore
 			}
 
 			writer.WriteElementString("faultstring", faultString);
+
+			if (!string.IsNullOrWhiteSpace(actor))
+			{
+				writer.WriteElementString("faultactor", actor);
+			}
 
 			if (faultDetail != null)
 			{
