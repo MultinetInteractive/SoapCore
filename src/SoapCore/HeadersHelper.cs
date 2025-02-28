@@ -99,7 +99,7 @@ namespace SoapCore
 				}
 
 				if (soapAction != null &&
-				    (string.IsNullOrEmpty(GetTrimmedSoapAction(soapAction)) || string.IsNullOrEmpty(GetTrimmedClearedSoapAction(soapAction))))
+				    (GetTrimmedSoapAction(soapAction.AsSpan()).Length == 0 || GetTrimmedClearedSoapAction(soapAction.AsSpan()).Length == 0))
 				{
 					soapAction = string.Empty;
 				}
@@ -137,27 +137,27 @@ namespace SoapCore
 			return soapAction;
 		}
 
-		public static string GetTrimmedClearedSoapAction(string inSoapAction)
+		public static ReadOnlySpan<char> GetTrimmedClearedSoapAction(ReadOnlySpan<char> inSoapAction)
 		{
-			string trimmedAction = GetTrimmedSoapAction(inSoapAction);
+			ReadOnlySpan<char> trimmedAction = GetTrimmedSoapAction(inSoapAction);
 
-			if (trimmedAction.EndsWith("Request"))
+			if (trimmedAction.EndsWith("Request".AsSpan()))
 			{
-				int endIndex = trimmedAction.LastIndexOf('R');
-				string clearedAction = trimmedAction.Substring(0, endIndex);
+				var clearedAction = trimmedAction.Slice(0, trimmedAction.Length - 7);
 				return clearedAction;
 			}
 
 			return trimmedAction;
 		}
 
-		public static string GetTrimmedSoapAction(string inSoapAction)
+		public static ReadOnlySpan<char> GetTrimmedSoapAction(ReadOnlySpan<char> inSoapAction)
 		{
-			string soapAction = inSoapAction;
-			if (soapAction.Contains('/'))
+			ReadOnlySpan<char> soapAction = inSoapAction;
+			var lastIndexOfSlash = soapAction.LastIndexOf('/');
+			if (lastIndexOfSlash >= 0)
 			{
 				// soapAction may be a path. Therefore must take the action from the path provided.
-				soapAction = soapAction.Split('/').Last();
+				soapAction = soapAction.Slice(lastIndexOfSlash + 1);
 			}
 
 			return soapAction;

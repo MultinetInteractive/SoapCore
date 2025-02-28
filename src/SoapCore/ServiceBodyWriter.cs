@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -57,7 +58,7 @@ namespace SoapCore
 		{
 			int blockSize = 256;
 			int bytesRead = 0;
-			byte[] block = new byte[blockSize];
+			byte[] block = ArrayPool<byte>.Shared.Rent(blockSize);
 			var stream = (Stream)value;
 			stream.Position = 0;
 
@@ -76,9 +77,11 @@ namespace SoapCore
 				if (blockSize < 65536 && bytesRead == blockSize)
 				{
 					blockSize = blockSize * 16;
-					block = new byte[blockSize];
+					ArrayPool<byte>.Shared.Return(block);
+					block = ArrayPool<byte>.Shared.Rent(blockSize);
 				}
 			}
+			ArrayPool<byte>.Shared.Return(block);
 		}
 
 		private void OnWriteXmlSerializerBodyContents(XmlDictionaryWriter writer)

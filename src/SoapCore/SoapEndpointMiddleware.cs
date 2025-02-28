@@ -555,14 +555,14 @@ namespace SoapCore
 		private bool TryGetOperation(string methodName, out OperationDescription operation)
 		{
 			operation = _service.Operations.FirstOrDefault(o => o.SoapAction.Equals(methodName, StringComparison.OrdinalIgnoreCase)
-							|| o.Name.Equals(HeadersHelper.GetTrimmedSoapAction(methodName), StringComparison.OrdinalIgnoreCase)
-							|| methodName.Equals(HeadersHelper.GetTrimmedSoapAction(o.Name), StringComparison.OrdinalIgnoreCase));
+							|| o.Name.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(methodName.AsSpan()), StringComparison.OrdinalIgnoreCase)
+							|| methodName.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase));
 
 			if (operation == null)
 			{
 				operation = _service.Operations.FirstOrDefault(o =>
-							methodName.Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction), StringComparison.OrdinalIgnoreCase)
-							|| methodName.IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name), StringComparison.OrdinalIgnoreCase) >= 0);
+							methodName.AsSpan().Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction.AsSpan()), StringComparison.OrdinalIgnoreCase)
+							|| methodName.AsSpan().IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase) >= 0);
 			}
 
 			return operation != null;

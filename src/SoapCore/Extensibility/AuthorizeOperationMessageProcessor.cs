@@ -152,12 +152,12 @@ namespace SoapCore.Extensibility
 		{
 			var service = new ServiceDescription(serviceType, generateSoapActionWithoutContractName);
 			operation = service.Operations.FirstOrDefault(o => o.SoapAction.Equals(methodName, StringComparison.Ordinal)
-							|| o.Name.Equals(HeadersHelper.GetTrimmedSoapAction(methodName), StringComparison.Ordinal)
-							|| methodName.Equals(HeadersHelper.GetTrimmedSoapAction(o.Name), StringComparison.Ordinal));
+							|| o.Name.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(methodName.AsSpan()), StringComparison.Ordinal)
+							|| methodName.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.Ordinal));
 
 			operation ??= service.Operations.FirstOrDefault(o =>
-							methodName.Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction), StringComparison.Ordinal)
-							|| methodName.Contains(HeadersHelper.GetTrimmedSoapAction(o.Name)));
+							methodName.AsSpan().Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction.AsSpan()), StringComparison.Ordinal)
+							|| methodName.AsSpan().IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan())) >= 0);
 
 			return operation != null;
 		}
