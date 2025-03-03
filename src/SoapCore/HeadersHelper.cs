@@ -13,7 +13,6 @@ namespace SoapCore
 	{
 		private static readonly char[] ContentTypeSeparators = new[] { ';' };
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ReadOnlySpan<char> GetSoapAction(HttpContext httpContext, ref Message message)
 		{
 			XmlDictionaryReader reader = null;
