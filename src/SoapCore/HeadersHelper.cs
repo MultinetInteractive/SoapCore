@@ -15,16 +15,6 @@ namespace SoapCore
 
 		public static ReadOnlySpan<char> GetSoapAction(HttpContext httpContext, ref Message message)
 		{
-			XmlDictionaryReader reader = null;
-			if (!message.IsEmpty)
-			{
-				MessageBuffer mb = message.CreateBufferedCopy(int.MaxValue);
-				Message responseMsg = mb.CreateMessage();
-				message = mb.CreateMessage();
-
-				reader = responseMsg.GetReaderAtBodyContents();
-			}
-
 			var soapAction = httpContext.Request.Headers["SOAPAction"].FirstOrDefault().AsSpan();
 			if (soapAction.Length == 2 && soapAction[0] == '"' && soapAction[1] == '"')
 			{
@@ -167,9 +157,18 @@ namespace SoapCore
 					}
 				}
 
-				if (soapAction.IsEmpty && reader != null)
+				if (soapAction.IsEmpty)
 				{
-					soapAction = reader.LocalName.AsSpan();
+					XmlDictionaryReader reader = null;
+					if (!message.IsEmpty)
+					{
+						MessageBuffer mb = message.CreateBufferedCopy(int.MaxValue);
+						Message responseMsg = mb.CreateMessage();
+						message = mb.CreateMessage();
+
+						reader = responseMsg.GetReaderAtBodyContents();
+						soapAction = reader.LocalName.AsSpan();
+					}
 				}
 			}
 
