@@ -322,7 +322,7 @@ namespace SoapCore
 
 		private async Task ProcessHttpOperation(HttpContext context, IServiceProvider serviceProvider, string methodName)
 		{
-			if (!TryGetOperation(methodName, out var operation))
+			if (!TryGetOperation(methodName.AsSpan(), out var operation))
 			{
 				context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				await context.Response.WriteAsync($"Service does not support \"/{methodName}\"");
@@ -449,9 +449,9 @@ namespace SoapCore
 		{
 			Message responseMessage;
 			var soapAction = HeadersHelper.GetSoapAction(httpContext, ref requestMessage);
-			requestMessage.Headers.Action = soapAction;
+			requestMessage.Headers.Action = soapAction.ToString();
 
-			if (string.IsNullOrEmpty(soapAction))
+			if (soapAction.IsEmpty)
 			{
 				throw new ArgumentException($"Unable to handle request without a valid action parameter. Please supply a valid soap action.");
 			}
@@ -469,11 +469,13 @@ namespace SoapCore
 				reader = requestMessage.GetReaderAtBodyContents();
 			}
 
+			var actionString = soapAction.ToString();
+
 			try
 			{
 				if (!TryGetOperation(soapAction, out var operation))
 				{
-					throw new InvalidOperationException($"No operation found for specified action: {soapAction}");
+					throw new InvalidOperationException($"No operation found for specified action: {soapAction.ToString()}");
 				}
 
 				_logger.LogInformation("Request for operation {0}.{1} received", operation.Contract.Name, operation.Name);
@@ -522,7 +524,8 @@ namespace SoapCore
 					resultOutDictionary[parameterInfo.Name] = arguments[parameterInfo.Index];
 				}
 
-				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, soapAction, requestMessage, messageEncoder);
+
+				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, actionString, requestMessage, messageEncoder);
 
 				httpContext.Response.ContentType = httpContext.Request.ContentType;
 				httpContext.Response.Headers["SOAPAction"] = responseMessage.Headers.Action;
@@ -552,17 +555,31 @@ namespace SoapCore
 			return responseMessage;
 		}
 
-		private bool TryGetOperation(string methodName, out OperationDescription operation)
+		private bool TryGetOperation(ReadOnlySpan<char> methodName, out OperationDescription operation)
 		{
-			operation = _service.Operations.FirstOrDefault(o => o.SoapAction.Equals(methodName, StringComparison.OrdinalIgnoreCase)
-							|| o.Name.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(methodName.AsSpan()), StringComparison.OrdinalIgnoreCase)
-							|| methodName.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase));
+			operation = null;
+			foreach (var o in _service.Operations)
+			{
+				if (o.SoapAction.AsSpan().Equals(methodName, StringComparison.OrdinalIgnoreCase)
+							|| o.Name.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(methodName), StringComparison.OrdinalIgnoreCase)
+							|| methodName.Equals(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase))
+				{
+					operation = o;
+					break;
+				}
+			}
 
 			if (operation == null)
 			{
-				operation = _service.Operations.FirstOrDefault(o =>
-							methodName.AsSpan().Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction.AsSpan()), StringComparison.OrdinalIgnoreCase)
-							|| methodName.AsSpan().IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase) >= 0);
+				foreach (var o in _service.Operations)
+				{
+					if (methodName.Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction.AsSpan()), StringComparison.OrdinalIgnoreCase)
+							|| methodName.IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase) >= 0)
+					{
+						operation = o;
+						break;
+					}
+				}
 			}
 
 			return operation != null;
