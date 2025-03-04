@@ -162,7 +162,8 @@ namespace SoapCore
 
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
 		{
-			var reader = _body.CreateReader();
+			
+			var reader = XmlReader.Create(new StringReader(_body.ToString()));
 			reader.Read();
 			return XmlDictionaryReader.CreateDictionaryReader(reader);
 		}
