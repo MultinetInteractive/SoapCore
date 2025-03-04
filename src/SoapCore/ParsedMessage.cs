@@ -102,17 +102,7 @@ namespace SoapCore
 			{
 				foreach (var element in headerNode.Elements())
 				{
-					bool mustUnderstand = element.Attribute(soapNs + "mustUnderstand")?.Value == "1";
-					string actor = element.Attribute(soapNs + "actor")?.Value ?? string.Empty;
-					bool relay = element.Attribute(soapNs + "relay")?.Value.ToLower() == "true";
-
-					object value = element.Elements().FirstOrDefault();
-					if (value is null)
-					{
-						value = element.Value;
-					}
-
-					var header = MessageHeader.CreateHeader(element.Name.LocalName, element.Name.NamespaceName, value, mustUnderstand, actor, relay);
+					var header = new ParsedMessageHeader(element.Name.LocalName, element.Name.NamespaceName, element.Elements().ToArray(), element.Value, element.Attributes().ToArray());
 					headers.Add(header);
 				}
 			}
