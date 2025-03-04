@@ -89,7 +89,10 @@ namespace SoapCore
 		{
 			var headers = new MessageHeaders(version);
 			var root = envelope.Root;
-			if (root == null) return headers;
+			if (root == null)
+			{
+				return headers;
+			}
 
 			XNamespace soapNs = version.Envelope.Namespace();
 			var headerNode = root.Element(soapNs + "Header");
