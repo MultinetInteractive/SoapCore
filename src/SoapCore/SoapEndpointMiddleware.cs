@@ -524,7 +524,6 @@ namespace SoapCore
 					resultOutDictionary[parameterInfo.Name] = arguments[parameterInfo.Index];
 				}
 
-
 				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, actionString, requestMessage, messageEncoder);
 
 				httpContext.Response.ContentType = httpContext.Request.ContentType;
@@ -1016,7 +1015,7 @@ namespace SoapCore
 
 			foreach (string key in httpProperty.Headers.Keys)
 			{
-				httpContext.Response.Headers.Add(key, httpProperty.Headers.GetValues(key));
+				httpContext.Response.Headers.Append(key, httpProperty.Headers.GetValues(key));
 			}
 		}
 
