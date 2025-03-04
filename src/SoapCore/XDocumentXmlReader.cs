@@ -22,9 +22,19 @@ namespace SoapCore
 		{
 			string base64String = _reader.Value;
 			byte[] data = Convert.FromBase64String(base64String);
-			int bytesToCopy = Math.Min(count, data.Length) - index;
+			int bytesToCopy = Math.Max(Math.Min(count, data.Length) - index, 0);
 			Array.Copy(data, 0, buffer, index, bytesToCopy);
 			return bytesToCopy;
+		}
+
+		public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
+		{
+			if (!Read() || _reader.NodeType != XmlNodeType.Text)
+			{
+				return 0;
+			}
+
+			return ReadContentAsBase64(buffer, index, count);
 		}
 
 		public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
@@ -38,9 +48,19 @@ namespace SoapCore
                       .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
                       .ToArray();
 #endif
-			int bytesToCopy = Math.Min(count, data.Length) - index;
+			int bytesToCopy = Math.Max(Math.Min(count, data.Length) - index, 0);
 			Array.Copy(data, 0, buffer, index, bytesToCopy);
 			return bytesToCopy;
+		}
+
+		public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
+		{
+			if (!Read() || _reader.NodeType != XmlNodeType.Text)
+			{
+				return 0;
+			}
+
+			return ReadContentAsBinHex(buffer, index, count);
 		}
 
 		public override bool Read() => _reader.Read();
