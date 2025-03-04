@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -11,6 +12,9 @@ namespace SoapCore
 	{
 		private readonly XDocument _document;
 		private readonly XmlReader _reader;
+		private MemoryStream? _binaryStream;
+		private bool _isReadingBinary;
+		private bool _isBase64Mode;
 
 		public XDocumentXmlReader(XDocument document)
 		{
@@ -18,52 +22,80 @@ namespace SoapCore
 			_reader = document.CreateReader();
 		}
 
+		private void EnsureBinaryStream(bool isBase64)
+		{
+			if (!_isReadingBinary)
+			{
+				_isBase64Mode = isBase64;
+				string data = ReadAllTextContent();
+				byte[] binaryData = isBase64 ? Convert.FromBase64String(data) : ConvertHexStringToBytes(data);
+
+				_binaryStream = new MemoryStream(binaryData);
+				_isReadingBinary = true;
+			}
+		}
+
+		private string ReadAllTextContent()
+		{
+			var sb = new StringBuilder();
+			while (_reader.NodeType == XmlNodeType.Text || _reader.NodeType == XmlNodeType.Whitespace)
+			{
+				sb.Append(_reader.Value);
+				_reader.Read();
+			}
+			return sb.ToString();
+		}
+
+#if NET8_0_OR_GREATER
+		private static byte[] ConvertHexStringToBytes(string hexString) => Convert.FromHexString(hexString);
+#else
+    private static byte[] ConvertHexStringToBytes(string hexString)
+    {
+        return Enumerable.Range(0, hexString.Length)
+                         .Where(x => x % 2 == 0)
+                         .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
+                         .ToArray();
+    }
+#endif
+
 		public override int ReadContentAsBase64(byte[] buffer, int index, int count)
 		{
-			string base64String = _reader.Value;
-			byte[] data = Convert.FromBase64String(base64String);
-			int bytesToCopy = Math.Max(Math.Min(count, data.Length) - index, 0);
-			Array.Copy(data, 0, buffer, index, bytesToCopy);
-			return bytesToCopy;
+			EnsureBinaryStream(true);
+			return _binaryStream!.Read(buffer, index, count);
 		}
 
 		public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
 		{
-			if (!Read() || _reader.NodeType != XmlNodeType.Text)
+			if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
 			{
 				return 0;
 			}
-
 			return ReadContentAsBase64(buffer, index, count);
 		}
 
 		public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
 		{
-			string hexString = _reader.Value;
-#if NET8_0_OR_GREATER
-			byte[] data = Convert.FromHexString(hexString);
-#else
-			byte[] data = Enumerable.Range(0, hexString.Length)
-                      .Where(x => x % 2 == 0)
-                      .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
-                      .ToArray();
-#endif
-			int bytesToCopy = Math.Max(Math.Min(count, data.Length) - index, 0);
-			Array.Copy(data, 0, buffer, index, bytesToCopy);
-			return bytesToCopy;
+			EnsureBinaryStream(false);
+			return _binaryStream!.Read(buffer, index, count);
 		}
 
 		public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
 		{
-			if (!Read() || _reader.NodeType != XmlNodeType.Text)
+			if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
 			{
 				return 0;
 			}
-
 			return ReadContentAsBinHex(buffer, index, count);
 		}
 
-		public override bool Read() => _reader.Read();
+		public override bool Read()
+		{
+			_isReadingBinary = false;
+			_binaryStream?.Dispose();
+			_binaryStream = null;
+			return _reader.Read();
+		}
+
 		public override string GetAttribute(int i) => _reader.GetAttribute(i);
 		public override string GetAttribute(string name) => _reader.GetAttribute(name);
 		public override string GetAttribute(string name, string namespaceURI) => _reader.GetAttribute(name, namespaceURI);
