@@ -17,6 +17,7 @@ namespace SoapCore
 		private readonly MessageProperties _properties;
 		private readonly MessageVersion _version;
 		private readonly XDocument _body;
+		private readonly bool _isEmpty;
 
 		/// <summary>
 		/// Creates a ParsedMessage from an ASP.NET Core HttpRequest.
@@ -29,9 +30,9 @@ namespace SoapCore
 			var envelope = await ReadHttpRequestBodyAsync(httpRequest);
 			var headers = ExtractSoapHeaders(envelope, version);
 			var properties = ExtractSoapProperties(httpRequest);
-			var body = ExtractSoapBody(envelope, version);
+			(var body, var isEmpty) = ExtractSoapBody(envelope, version);
 
-			return new ParsedMessage(headers, properties, version, body);
+			return new ParsedMessage(headers, properties, version, body, isEmpty);
 		}
 
 		public static async Task<ParsedMessage> FromXmlReaderAsync(XmlReader reader, MessageVersion version)
@@ -42,17 +43,18 @@ namespace SoapCore
 			var envelope = XDocument.Load(reader);
 			var headers = ExtractSoapHeaders(envelope, version);
 			//var properties = ExtractSoapProperties(httpRequest);
-			var body = ExtractSoapBody(envelope, version);
+			(var body, var isEmpty) = ExtractSoapBody(envelope, version);
 
-			return new ParsedMessage(headers, new MessageProperties(), version, body);
+			return new ParsedMessage(headers, new MessageProperties(), version, body, isEmpty);
 		}
 
-		public ParsedMessage(MessageHeaders headers, MessageProperties properties, MessageVersion version, XDocument body)
+		public ParsedMessage(MessageHeaders headers, MessageProperties properties, MessageVersion version, XDocument body, bool isEmpty)
 		{
 			_headers = headers;
 			_properties = properties;
 			_version = version;
 			_body = body;
+			_isEmpty = isEmpty;
 		}
 
 		public XDocument GetBodyAsXDocument()
@@ -121,16 +123,23 @@ namespace SoapCore
 		/// <summary>
 		/// Extracts only the SOAP Body content.
 		/// </summary>
-		private static XDocument ExtractSoapBody(XDocument envelope, MessageVersion version)
+		private static (XDocument, bool isEmpty) ExtractSoapBody(XDocument envelope, MessageVersion version)
 		{
 			var root = envelope.Root;
-			if (root == null) return new XDocument();
+			if (root == null)
+			{
+				return (new XDocument(), true);
+			}
 
 			XNamespace soapNs = version.Envelope.Namespace();
 			var bodyNode = root.Element(soapNs + "Body");
-			if (bodyNode == null) return new XDocument();
+			if (bodyNode == null)
+			{
+				return (new XDocument(), true);
+			}
 
-			return new XDocument(bodyNode.Elements().FirstOrDefault());
+			//return new XDocument(bodyNode.Elements().FirstOrDefault());
+			return (envelope, bodyNode.IsEmpty);
 		}
 
 		/// <summary>
@@ -156,7 +165,8 @@ namespace SoapCore
 		public override MessageProperties Properties => _properties;
 		public override MessageVersion Version => _version;
 
-		public override bool IsEmpty => !_body.Elements().Any();
+
+		public override bool IsEmpty => _isEmpty;
 
 		protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
 		{
@@ -167,7 +177,19 @@ namespace SoapCore
 		{
 			var reader = new XDocumentXmlReader(_body);
 			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
-			reader.Read();
+
+			XNamespace soapNs = _version.Envelope.Namespace();
+
+			while (reader.Read()) // Advance through the document
+			{
+				if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "Body" && reader.NamespaceURI.Equals(soapNs.ToString(), StringComparison.OrdinalIgnoreCase))
+				{
+					break;
+				}
+			}
+
+			while (reader.Read() && reader.NodeType != XmlNodeType.Element && reader.NodeType != XmlNodeType.EndElement) ;
+
 			return XmlDictionaryReader.CreateDictionaryReader(reader);
 		}
 

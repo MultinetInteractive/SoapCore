@@ -11,7 +11,7 @@ namespace SoapCore
 
 		public ParsedMessageBuffer(ParsedMessage message)
 		{
-			_originalMessage = new ParsedMessage(message.Headers, message.Properties, message.Version, message.GetBodyAsXDocument());
+			_originalMessage = new ParsedMessage(message.Headers, message.Properties, message.Version, message.GetBodyAsXDocument(), message.IsEmpty);
 		}
 
 		public override int BufferSize => int.MaxValue;
@@ -22,7 +22,7 @@ namespace SoapCore
 
 		public override Message CreateMessage()
 		{
-			return new ParsedMessage(_originalMessage.Headers, _originalMessage.Properties, _originalMessage.Version, _originalMessage.GetBodyAsXDocument());
+			return new ParsedMessage(_originalMessage.Headers, _originalMessage.Properties, _originalMessage.Version, _originalMessage.GetBodyAsXDocument(), _originalMessage.IsEmpty);
 		}
 	}
 }
