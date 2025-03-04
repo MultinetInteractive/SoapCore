@@ -322,7 +322,7 @@ namespace SoapCore
 
 		private async Task ProcessHttpOperation(HttpContext context, IServiceProvider serviceProvider, string methodName)
 		{
-			if (!TryGetOperation(methodName.AsSpan(), out var operation))
+			if (!TryGetOperation(methodName, out var operation))
 			{
 				context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 				await context.Response.WriteAsync($"Service does not support \"/{methodName}\"");
@@ -451,7 +451,7 @@ namespace SoapCore
 			var soapAction = HeadersHelper.GetSoapAction(httpContext, ref requestMessage);
 			requestMessage.Headers.Action = soapAction.ToString();
 
-			if (soapAction.IsEmpty)
+			if (string.IsNullOrEmpty(soapAction))
 			{
 				throw new ArgumentException($"Unable to handle request without a valid action parameter. Please supply a valid soap action.");
 			}
@@ -554,9 +554,11 @@ namespace SoapCore
 			return responseMessage;
 		}
 
-		private bool TryGetOperation(ReadOnlySpan<char> methodName, out OperationDescription operation)
+		private bool TryGetOperation(string methodNameStr, out OperationDescription operation)
 		{
+			var methodName = methodNameStr.AsSpan();
 			operation = null;
+
 			foreach (var o in _service.Operations)
 			{
 				if (o.SoapAction.AsSpan().Equals(methodName, StringComparison.OrdinalIgnoreCase)
