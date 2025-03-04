@@ -172,7 +172,8 @@ namespace SoapCore.MessageEncoder
 				reader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings);
 			}
 
-			return Message.CreateMessage(reader, maxSizeOfHeaders, MessageVersion);
+			return await ParsedMessage.FromXmlReaderAsync(reader, MessageVersion);
+			//return Message.CreateMessage(reader, MaxSoapHeaderSize, MessageVersion);
 		}
 
 		public virtual async Task WriteMessageAsync(Message message, HttpContext httpContext, PipeWriter pipeWriter, bool indentXml)
