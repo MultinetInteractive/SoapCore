@@ -101,14 +101,14 @@ namespace SoapCore
 					string actor = element.Attribute(soapNs + "actor")?.Value ?? string.Empty;
 					bool relay = element.Attribute(soapNs + "relay")?.Value.ToLower() == "true";
 
-					var header = MessageHeader.CreateHeader(element.Name.LocalName, element.Name.NamespaceName, element.Value, mustUnderstand, actor, relay);
-
-					headers.Add(header);
-
-					if (header.Name.Equals("replyto", StringComparison.OrdinalIgnoreCase))
+					object value = element.Elements().FirstOrDefault();
+					if (value is null)
 					{
-						headers.ReplyTo = new System.ServiceModel.EndpointAddress(element.Value);
+						value = element.Value;
 					}
+
+					var header = MessageHeader.CreateHeader(element.Name.LocalName, element.Name.NamespaceName, value, mustUnderstand, actor, relay);
+					headers.Add(header);
 				}
 			}
 
@@ -162,8 +162,8 @@ namespace SoapCore
 
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
 		{
-			
-			var reader = XmlReader.Create(new StringReader(_body.ToString()));
+			var reader = new XDocumentXmlReader(_body);
+			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
 			reader.Read();
 			return XmlDictionaryReader.CreateDictionaryReader(reader);
 		}
