@@ -169,8 +169,8 @@ namespace SoapCore
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
 		{
 			var reader = new XDocumentXmlReader(_envelope);
-			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
 
+			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
 			XNamespace soapNs = _version.Envelope.Namespace();
 
 			while (reader.Read()) // Advance through the document
@@ -181,7 +181,9 @@ namespace SoapCore
 				}
 			}
 
-			while (reader.Read() && reader.NodeType != XmlNodeType.Element && reader.NodeType != XmlNodeType.EndElement) ;
+			while (reader.Read() && reader.NodeType != XmlNodeType.Element && reader.NodeType != XmlNodeType.EndElement)
+			{
+			}
 
 			return XmlDictionaryReader.CreateDictionaryReader(reader);
 		}
