@@ -16,7 +16,7 @@ namespace SoapCore
 		private readonly MessageHeaders _headers;
 		private readonly MessageProperties _properties;
 		private readonly MessageVersion _version;
-		private readonly XDocument _body;
+		private readonly XDocument _envelope;
 		private readonly bool _isEmpty;
 
 		/// <summary>
@@ -53,13 +53,13 @@ namespace SoapCore
 			_headers = headers;
 			_properties = properties;
 			_version = version;
-			_body = body;
+			_envelope = body;
 			_isEmpty = isEmpty;
 		}
 
 		public XDocument GetBodyAsXDocument()
 		{
-			return _body;
+			return _envelope;
 		}
 
 		/// <summary>
@@ -160,12 +160,15 @@ namespace SoapCore
 
 		protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
 		{
-			_body.WriteTo(writer);
+			using (var reader = GetReaderAtBodyContents())
+			{
+				writer.WriteNode(reader, true);
+			}
 		}
 
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
 		{
-			var reader = new XDocumentXmlReader(_body);
+			var reader = new XDocumentXmlReader(_envelope);
 			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
 
 			XNamespace soapNs = _version.Envelope.Namespace();
@@ -196,7 +199,7 @@ namespace SoapCore
 
 		public override string ToString()
 		{
-			return _body?.ToString() ?? "<Empty Body>";
+			return _envelope?.ToString() ?? "<Empty Body>";
 		}
 	}
 
