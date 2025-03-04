@@ -13,7 +13,7 @@ namespace SoapCore
 	{
 		private static readonly char[] ContentTypeSeparators = new[] { ';' };
 
-		public static ReadOnlySpan<char> GetSoapAction(HttpContext httpContext, ref Message message)
+		public static string GetSoapAction(HttpContext httpContext, ref Message message)
 		{
 			var soapAction = httpContext.Request.Headers["SOAPAction"].FirstOrDefault().AsSpan();
 			if (soapAction.Length == 2 && soapAction[0] == '"' && soapAction[1] == '"')
@@ -178,7 +178,7 @@ namespace SoapCore
 				soapAction = soapAction.Trim('"');
 			}
 
-			return soapAction;
+			return soapAction.ToString();
 		}
 
 		public static ReadOnlySpan<char> GetTrimmedClearedSoapAction(ReadOnlySpan<char> inSoapAction)

@@ -45,7 +45,7 @@ namespace SoapCore.Extensibility
 			var soapAction = HeadersHelper.GetSoapAction(httpContext, ref requestMessage);
 			requestMessage.Headers.Action = soapAction.ToString();
 
-			if (soapAction.IsEmpty)
+			if (string.IsNullOrEmpty(soapAction))
 			{
 				throw new ArgumentException("Unable to handle request without a valid action parameter. Please supply a valid soap action.");
 			}
@@ -148,8 +148,10 @@ namespace SoapCore.Extensibility
 			}
 		}
 
-		private static bool TryGetOperation(ReadOnlySpan<char> methodName, Type serviceType, bool generateSoapActionWithoutContractName, out OperationDescription operation)
+		private static bool TryGetOperation(string methodNameStr, Type serviceType, bool generateSoapActionWithoutContractName, out OperationDescription operation)
 		{
+			ReadOnlySpan<char> methodName = methodNameStr.AsSpan();
+
 			var service = new ServiceDescription(serviceType, generateSoapActionWithoutContractName);
 			operation = null;
 			foreach (var o in service.Operations)
