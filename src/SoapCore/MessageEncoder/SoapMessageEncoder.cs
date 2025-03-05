@@ -136,19 +136,7 @@ namespace SoapCore.MessageEncoder
 				throw new ArgumentNullException(nameof(stream));
 			}
 
-			Stream ms;
-			if (stream is FileBufferingReadStream)
-			{
-				ms = stream;
-			}
-			else
-			{
-				ms = new MemoryStream();
-				await stream.CopyToAsync(ms);
-				ms.Seek(0, SeekOrigin.Begin);
-			}
-
-			XmlReader reader;
+			Message message;
 
 			var readEncoding = SoapMessageEncoderDefaults.ContentTypeToEncoding(contentType);
 
@@ -162,18 +150,23 @@ namespace SoapCore.MessageEncoder
 
 			if (supportXmlDictionaryReader)
 			{
-				reader = XmlDictionaryReader.CreateTextReader(ms, readEncoding, ReaderQuotas, dictionaryReader => { });
+				using (var xdReader = XmlDictionaryReader.CreateTextReader(stream, readEncoding, ReaderQuotas, dictionaryReader => { }))
+				{
+					message = ParsedMessage.FromXmlReaderAsync(xdReader, MessageVersion);
+				}
 			}
 			else
 			{
-				var streamReaderWithEncoding = new StreamReader(ms, readEncoding);
+				var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
 
 				var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
-				reader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings);
+				using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
+				{
+					message = ParsedMessage.FromXmlReaderAsync(xReader, MessageVersion);
+				}
 			}
 
-			return await ParsedMessage.FromXmlReaderAsync(reader, MessageVersion);
-//			return Message.CreateMessage(reader, MaxSoapHeaderSize, MessageVersion);
+			return message;
 		}
 
 		public virtual async Task WriteMessageAsync(Message message, HttpContext httpContext, PipeWriter pipeWriter, bool indentXml)

@@ -12,6 +12,7 @@ using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Diagnosers;
 using Microsoft.Extensions.Logging;
 using BenchmarkDotNet.Jobs;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SoapCore.Benchmark
 {
@@ -81,9 +82,26 @@ namespace SoapCore.Benchmark
 	}
 	class Program
 	{
-		static void Main()
+		static async Task Main()
 		{
 			BenchmarkRunner.Run<EchoBench>();
+
+			//var eb = new EchoBench();
+			//eb.Setup();
+			//eb.LoopNum = 100_000;
+
+			//Console.WriteLine("Klicka");
+			//Console.ReadKey();
+			
+
+			//Console.WriteLine("Running...");
+
+			//await eb.Echo();
+			
+
+			//Console.WriteLine("Klicka igen");
+			//Console.ReadKey();
+			//eb.Cleanup();
 		}
 	}
 }

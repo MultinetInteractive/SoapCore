@@ -658,9 +658,9 @@ namespace SoapCore
 			}
 
 			// Execute Mvc ActionFilters
-			foreach (var actionFilterAttr in operation.DispatchMethod.CustomAttributes.Where(a => a.AttributeType.Name == "ServiceFilterAttribute"))
+			foreach (var actionFilterAttr in operation.DispatchMethod.GetCustomAttributes<ServiceFilterAttribute>())
 			{
-				var actionFilter = serviceProvider.GetService(actionFilterAttr.ConstructorArguments[0].Value as Type);
+				var actionFilter = serviceProvider.GetService(actionFilterAttr.ServiceType);
 				actionFilter.GetType().GetMethod("OnSoapActionExecuting")?.Invoke(actionFilter, new[] { operation.Name, arguments, httpContext, modelBindingOutput });
 			}
 
@@ -842,13 +842,15 @@ namespace SoapCore
 			MessageContractAttribute messageContractAttribute,
 			object[] arguments)
 		{
-			var messageHeadersMembers = parameterType.GetPropertyOrFieldMembers()
-				.Where(x => x.GetCustomAttribute<MessageHeaderAttribute>() != null)
-				.Select(mi => new
-				{
-					MemberInfo = mi,
-					MessageHeaderMemberAttribute = mi.GetCustomAttribute<MessageHeaderAttribute>()
-				}).ToArray();
+
+			var messageHeadersMembers = (from p in parameterType.GetPropertyOrFieldMembers()
+					   let attr = p.GetCustomAttribute<MessageHeaderAttribute>()
+					   where attr != null
+					   select new
+					   {
+						   MemberInfo = p,
+						   MessageHeaderMemberAttribute = attr
+					   }).ToArray();
 
 			var wrapperObject = Activator.CreateInstance(parameterInfo.Parameter.ParameterType);
 

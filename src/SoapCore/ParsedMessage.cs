@@ -19,23 +19,7 @@ namespace SoapCore
 		private readonly XDocument _body;
 		private readonly bool _isEmpty;
 
-		/// <summary>
-		/// Creates a ParsedMessage from an ASP.NET Core HttpRequest.
-		/// </summary>
-		public static async Task<ParsedMessage> FromHttpRequestAsync(HttpRequest httpRequest, MessageVersion version)
-		{
-			if (httpRequest == null) throw new ArgumentNullException(nameof(httpRequest));
-			if (version == null) throw new ArgumentNullException(nameof(version));
-
-			var envelope = await ReadHttpRequestBodyAsync(httpRequest);
-			var headers = ExtractSoapHeaders(envelope, version);
-			var properties = ExtractSoapProperties(httpRequest);
-			(var body, var isEmpty) = ExtractSoapBody(envelope, version);
-
-			return new ParsedMessage(headers, properties, version, body, isEmpty);
-		}
-
-		public static async Task<ParsedMessage> FromXmlReaderAsync(XmlReader reader, MessageVersion version)
+		public static ParsedMessage FromXmlReaderAsync(XmlReader reader, MessageVersion version)
 		{
 			if (reader == null) throw new ArgumentNullException(nameof(reader));
 			if (version == null) throw new ArgumentNullException(nameof(version));
@@ -60,28 +44,6 @@ namespace SoapCore
 		public XDocument GetBodyAsXDocument()
 		{
 			return _body;
-		}
-
-		/// <summary>
-		/// Reads the HttpRequest body and converts it to an XDocument.
-		/// </summary>
-		private static async Task<XDocument> ReadHttpRequestBodyAsync(HttpRequest httpRequest)
-		{
-			if (httpRequest.Body == null || httpRequest.ContentLength == 0)
-				return new XDocument();
-
-			httpRequest.EnableBuffering(); // Allows re-reading the stream
-			using (var reader = new StreamReader(httpRequest.Body, Encoding.UTF8, true, -1, true))
-			{
-				string bodyText = await reader.ReadToEndAsync();
-				httpRequest.Body.Position = 0; // Reset stream position for further use
-
-				using (var stringReader = new StringReader(bodyText))
-				using (var xmlReader = XmlReader.Create(stringReader))
-				{
-					return XDocument.Load(xmlReader);
-				}
-			}
 		}
 
 		/// <summary>
