@@ -876,12 +876,14 @@ namespace SoapCore
 				}
 			}
 
-			var messageBodyMembers = parameterType.GetPropertyOrFieldMembers()
-				.Where(x => x.GetCustomAttribute<MessageBodyMemberAttribute>() != null).Select(mi => new
-				{
-					Member = mi,
-					MessageBodyMemberAttribute = mi.GetCustomAttribute<MessageBodyMemberAttribute>()
-				}).OrderBy(x => x.MessageBodyMemberAttribute.Order);
+			var messageBodyMembers = (from p in parameterType.GetPropertyOrFieldMembers()
+									  let attr = p.GetCustomAttribute<MessageBodyMemberAttribute>()
+									  where attr != null
+									  select new
+									  {
+										  Member = p,
+										  MessageBodyMemberAttribute = attr
+									  }).OrderBy(x => x.MessageBodyMemberAttribute.Order);
 
 			if (messageContractAttribute.IsWrapped)
 			{

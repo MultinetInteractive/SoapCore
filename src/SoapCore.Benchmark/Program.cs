@@ -18,7 +18,7 @@ namespace SoapCore.Benchmark
 {
 	[MemoryDiagnoser]
 	[SimpleJob(RuntimeMoniker.Net80, baseline: true, iterationCount: 20)]
-	[SimpleJob(RuntimeMoniker.NetCoreApp31, iterationCount: 20)]
+	//[SimpleJob(RuntimeMoniker.NetCoreApp31, iterationCount: 20)]
 	public class EchoBench
 	{
 		// 0 measures overhead of creating host
