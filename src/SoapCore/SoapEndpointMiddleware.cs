@@ -630,8 +630,8 @@ namespace SoapCore
 				var messageHeaderMembers = responseObject.GetType().GetMembersWithAttribute<MessageHeaderAttribute>();
 				foreach (var messageHeaderMember in messageHeaderMembers)
 				{
-					var messageHeaderAttribute = messageHeaderMember.GetCustomAttribute<MessageHeaderAttribute>();
-					responseMessage.Headers.Add(MessageHeader.CreateHeader(messageHeaderAttribute.Name ?? messageHeaderMember.Name, messageHeaderAttribute.Namespace ?? operation.Contract.Namespace, messageHeaderMember.GetPropertyOrFieldValue(responseObject), messageHeaderAttribute.MustUnderstand));
+					var messageHeaderAttribute = messageHeaderMember.Attribute;
+					responseMessage.Headers.Add(MessageHeader.CreateHeader(messageHeaderAttribute.Name ?? messageHeaderMember.Member.Name, messageHeaderAttribute.Namespace ?? operation.Contract.Namespace, messageHeaderMember.Member.GetPropertyOrFieldValue(responseObject), messageHeaderAttribute.MustUnderstand));
 				}
 			}
 

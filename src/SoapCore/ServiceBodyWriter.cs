@@ -150,11 +150,7 @@ namespace SoapCore
 
 					if (shouldInline)
 					{
-						var memberInformation = resultType.GetMembersWithAttribute<MessageBodyMemberAttribute>().Select(mi => new
-						{
-							Member = mi,
-							MessageBodyMemberAttribute = mi.GetCustomAttribute<MessageBodyMemberAttribute>()
-						}).OrderBy(x => x.MessageBodyMemberAttribute?.Order ?? 0);
+						var memberInformation = resultType.GetMembersWithAttribute<MessageBodyMemberAttribute>().OrderBy(x => x.Attribute?.Order ?? 0);
 
 						if (messageContractAttribute != null && messageContractAttribute.IsWrapped)
 						{
@@ -166,8 +162,8 @@ namespace SoapCore
 							var memberType = memberInfo.Member.GetPropertyOrFieldType();
 							var memberValue = memberInfo.Member.GetPropertyOrFieldValue(_result);
 
-							var memberName = memberInfo.MessageBodyMemberAttribute?.Name ?? memberInfo.Member.Name;
-							var memberNamespace = memberInfo.MessageBodyMemberAttribute?.Namespace ?? _serviceNamespace;
+							var memberName = memberInfo.Attribute?.Name ?? memberInfo.Member.Name;
+							var memberNamespace = memberInfo.Attribute?.Namespace ?? _serviceNamespace;
 
 							var serializer = CachedXmlSerializer.GetXmlSerializer(memberType, memberName, memberNamespace);
 
