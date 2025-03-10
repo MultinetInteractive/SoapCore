@@ -18,6 +18,7 @@ namespace SoapCore
 
 		public override void Close()
 		{
+			_originalMessage?.Close();
 		}
 
 		public override Message CreateMessage()

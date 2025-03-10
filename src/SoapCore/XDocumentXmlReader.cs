@@ -12,7 +12,7 @@ namespace SoapCore
 	{
 		private readonly XDocument _document;
 		private readonly XmlReader _reader;
-		private MemoryStream? _binaryStream;
+		private MemoryStream _binaryStream;
 		private bool _isReadingBinary;
 		private bool _isBase64Mode;
 
@@ -22,41 +22,20 @@ namespace SoapCore
 			_reader = document.CreateReader();
 		}
 
-		private void EnsureBinaryStream(bool isBase64)
-		{
-			if (!_isReadingBinary)
-			{
-				_isBase64Mode = isBase64;
-				string data = ReadAllTextContent();
-				byte[] binaryData = isBase64 ? Convert.FromBase64String(data) : ConvertHexStringToBytes(data);
-
-				_binaryStream = new MemoryStream(binaryData);
-				_isReadingBinary = true;
-			}
-		}
-
-		private string ReadAllTextContent()
-		{
-			var sb = new StringBuilder();
-			while (_reader.NodeType == XmlNodeType.Text || _reader.NodeType == XmlNodeType.Whitespace)
-			{
-				sb.Append(_reader.Value);
-				_reader.Read();
-			}
-			return sb.ToString();
-		}
-
-#if NET8_0_OR_GREATER
-		private static byte[] ConvertHexStringToBytes(string hexString) => Convert.FromHexString(hexString);
-#else
-    private static byte[] ConvertHexStringToBytes(string hexString)
-    {
-        return Enumerable.Range(0, hexString.Length)
-                         .Where(x => x % 2 == 0)
-                         .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
-                         .ToArray();
-    }
-#endif
+		public override XmlNodeType NodeType => _reader.NodeType;
+		public override string Name => _reader.Name;
+		public override string LocalName => _reader.LocalName;
+		public override string NamespaceURI => _reader.NamespaceURI;
+		public override string Prefix => _reader.Prefix;
+		public override bool HasValue => _reader.HasValue;
+		public override string Value => _reader.Value;
+		public override int Depth => _reader.Depth;
+		public override string BaseURI => _reader.BaseURI;
+		public override bool IsEmptyElement => _reader.IsEmptyElement;
+		public override int AttributeCount => _reader.AttributeCount;
+		public override bool EOF => _reader.EOF;
+		public override ReadState ReadState => _reader.ReadState;
+		public override XmlNameTable NameTable => _reader.NameTable;
 
 		public override int ReadContentAsBase64(byte[] buffer, int index, int count)
 		{
@@ -70,6 +49,7 @@ namespace SoapCore
 			{
 				return 0;
 			}
+
 			return ReadContentAsBase64(buffer, index, count);
 		}
 
@@ -85,6 +65,7 @@ namespace SoapCore
 			{
 				return 0;
 			}
+
 			return ReadContentAsBinHex(buffer, index, count);
 		}
 
@@ -109,19 +90,42 @@ namespace SoapCore
 		public override void ResolveEntity() => _reader.ResolveEntity();
 		public override bool ReadAttributeValue() => _reader.ReadAttributeValue();
 
-		public override XmlNodeType NodeType => _reader.NodeType;
-		public override string Name => _reader.Name;
-		public override string LocalName => _reader.LocalName;
-		public override string NamespaceURI => _reader.NamespaceURI;
-		public override string Prefix => _reader.Prefix;
-		public override bool HasValue => _reader.HasValue;
-		public override string Value => _reader.Value;
-		public override int Depth => _reader.Depth;
-		public override string BaseURI => _reader.BaseURI;
-		public override bool IsEmptyElement => _reader.IsEmptyElement;
-		public override int AttributeCount => _reader.AttributeCount;
-		public override bool EOF => _reader.EOF;
-		public override ReadState ReadState => _reader.ReadState;
-		public override XmlNameTable NameTable => _reader.NameTable;
+#if NET8_0_OR_GREATER
+		private static byte[] ConvertHexStringToBytes(string hexString) => Convert.FromHexString(hexString);
+#else
+		private static byte[] ConvertHexStringToBytes(string hexString)
+		{
+			return Enumerable.Range(0, hexString.Length)
+							 .Where(x => x % 2 == 0)
+							 .Select(x => Convert.ToByte(hexString.Substring(x, 2), 16))
+							 .ToArray();
+		}
+#endif
+
+		private void EnsureBinaryStream(bool isBase64)
+		{
+			if (!_isReadingBinary)
+			{
+				_isBase64Mode = isBase64;
+				string data = ReadAllTextContent();
+				byte[] binaryData = isBase64 ? Convert.FromBase64String(data) : ConvertHexStringToBytes(data);
+
+				_binaryStream = new MemoryStream(binaryData);
+				_isReadingBinary = true;
+			}
+		}
+
+		private string ReadAllTextContent()
+		{
+			var sb = new StringBuilder();
+
+			while (_reader.NodeType == XmlNodeType.Text || _reader.NodeType == XmlNodeType.Whitespace)
+			{
+				sb.Append(_reader.Value);
+				_reader.Read();
+			}
+
+			return sb.ToString();
+		}
 	}
 }
