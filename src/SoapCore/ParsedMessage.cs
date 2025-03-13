@@ -33,7 +33,7 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
-		public static ParsedMessage FromXmlReaderAsync(XmlReader reader, MessageVersion version)
+		public static ParsedMessage FromXmlReader(XmlReader reader, MessageVersion version)
 		{
 			if (reader == null)
 			{

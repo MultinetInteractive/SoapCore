@@ -152,7 +152,7 @@ namespace SoapCore.MessageEncoder
 			{
 				using (var xdReader = XmlDictionaryReader.CreateTextReader(stream, readEncoding, ReaderQuotas, dictionaryReader => { }))
 				{
-					message = ParsedMessage.FromXmlReaderAsync(xdReader, MessageVersion);
+					message = ParsedMessage.FromXmlReader(xdReader, MessageVersion);
 				}
 			}
 			else
@@ -162,7 +162,7 @@ namespace SoapCore.MessageEncoder
 				var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
 				using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
 				{
-					message = ParsedMessage.FromXmlReaderAsync(xReader, MessageVersion);
+					message = ParsedMessage.FromXmlReader(xReader, MessageVersion);
 				}
 			}
 
