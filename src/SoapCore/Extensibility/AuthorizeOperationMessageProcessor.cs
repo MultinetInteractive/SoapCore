@@ -43,7 +43,6 @@ namespace SoapCore.Extensibility
 		public async Task<Message> ProcessMessage(Message requestMessage, HttpContext httpContext, Func<Message, Task<Message>> next)
 		{
 			var soapAction = HeadersHelper.GetSoapAction(httpContext, ref requestMessage);
-			requestMessage.Headers.Action = soapAction.ToString();
 
 			if (string.IsNullOrEmpty(soapAction))
 			{

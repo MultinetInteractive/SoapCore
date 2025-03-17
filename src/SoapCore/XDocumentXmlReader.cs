@@ -10,15 +10,12 @@ namespace SoapCore
 {
 	public class XDocumentXmlReader : XmlReader
 	{
-		private readonly XDocument _document;
 		private readonly XmlReader _reader;
 		private MemoryStream _binaryStream;
 		private bool _isReadingBinary;
-		private bool _isBase64Mode;
 
 		public XDocumentXmlReader(XDocument document)
 		{
-			_document = document ?? throw new ArgumentNullException(nameof(document));
 			_reader = document.CreateReader();
 		}
 
@@ -90,6 +87,13 @@ namespace SoapCore
 		public override void ResolveEntity() => _reader.ResolveEntity();
 		public override bool ReadAttributeValue() => _reader.ReadAttributeValue();
 
+		protected override void Dispose(bool disposing)
+		{
+			_binaryStream?.Dispose();
+			_binaryStream = null;
+			base.Dispose(disposing);
+		}
+
 #if NET8_0_OR_GREATER
 		private static byte[] ConvertHexStringToBytes(string hexString) => Convert.FromHexString(hexString);
 #else
@@ -106,7 +110,6 @@ namespace SoapCore
 		{
 			if (!_isReadingBinary)
 			{
-				_isBase64Mode = isBase64;
 				string data = ReadAllTextContent();
 				byte[] binaryData = isBase64 ? Convert.FromBase64String(data) : ConvertHexStringToBytes(data);
 

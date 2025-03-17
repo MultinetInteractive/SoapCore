@@ -218,20 +218,20 @@ namespace SoapCore
 					if (messageEncoder.IsContentTypeSupported(multipartSection.ContentType, true)
 						|| messageEncoder.IsContentTypeSupported(multipartSection.ContentType, false))
 					{
-						return await messageEncoder.ReadMessageAsync(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
+						return messageEncoder.ReadMessage(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
 					}
 				}
 			}
 
 #if !NETCOREAPP3_0_OR_GREATER
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #else
 			if (httpContext.Request.Body is FileBufferingReadStream)
 			{
-				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+				return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 			}
 
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return messageEncoder.ReadMessage(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #endif
 		}
 
@@ -449,7 +449,7 @@ namespace SoapCore
 		{
 			Message responseMessage;
 			var soapAction = HeadersHelper.GetSoapAction(httpContext, ref requestMessage);
-			requestMessage.Headers.Action = soapAction.ToString();
+			requestMessage.Headers.Action = soapAction;
 
 			if (string.IsNullOrEmpty(soapAction))
 			{
