@@ -1180,11 +1180,6 @@ namespace SoapCore
 
 		private XmlNamespaceManager GetXmlNamespaceManager(SoapMessageEncoder messageEncoder)
 		{
-			var key = new XmlNamespaceManagerCacheKey
-			{
-				SoapMessageEncoder = messageEncoder
-			};
-
 			return _xmlNamespaceManagersByMessageEncoder.GetOrAdd(messageEncoder?.ToString() ?? "no_encoder", _ => CreateDefaultNamespaceManager(messageEncoder));
 
 			XmlNamespaceManager CreateDefaultNamespaceManager(SoapMessageEncoder messageEncoder)
