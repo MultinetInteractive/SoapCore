@@ -74,6 +74,16 @@ namespace SoapCore.MessageEncoder
 
 		public XmlNamespaceManager XmlNamespaceOverrides { get; }
 
+		public override int GetHashCode()
+		{
+			return $"{MessageVersion.ToString()},{BindingName},{PortName}".GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return $"{MessageVersion.ToString()},{BindingName},{PortName}";
+		}
+
 		public bool IsContentTypeSupported(string contentType, bool checkCharset)
 		{
 			if (contentType == null)
@@ -146,24 +156,12 @@ namespace SoapCore.MessageEncoder
 				readEncoding = _writeEncoding;
 			}
 
-			var supportXmlDictionaryReader = SoapMessageEncoderDefaults.TryValidateEncoding(readEncoding, out _);
+			var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
 
-			if (supportXmlDictionaryReader)
+			var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
+			using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
 			{
-				using (var xdReader = XmlDictionaryReader.CreateTextReader(stream, readEncoding, ReaderQuotas, dictionaryReader => { }))
-				{
-					message = ParsedMessage.FromXmlReader(xdReader, MessageVersion);
-				}
-			}
-			else
-			{
-				var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
-
-				var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
-				using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
-				{
-					message = ParsedMessage.FromXmlReader(xReader, MessageVersion);
-				}
+				message = ParsedMessage.FromXmlReader(xReader, MessageVersion);
 			}
 
 			return message;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -43,6 +44,7 @@ namespace SoapCore
 		private readonly SoapMessageEncoder[] _messageEncoders;
 		private readonly IXmlSerializationHandler _serializerHandler;
 
+		private readonly ConcurrentDictionary<string, XmlNamespaceManager> _xmlNamespaceManagersByMessageEncoder = new ConcurrentDictionary<string, XmlNamespaceManager>();
 		public SoapEndpointMiddleware(ILogger<SoapEndpointMiddleware<T_MESSAGE>> logger, RequestDelegate next, SoapOptions options, IServiceProvider serviceProvider)
 		{
 			_logger = logger;
@@ -78,19 +80,18 @@ namespace SoapCore
 
 			trailPathTuner?.ConvertPath(httpContext);
 
-			var requestMethod = httpContext.Request.Method;
-
 			if (httpContext.Request.Path.StartsWithSegments(_options.Path, _pathComparisonStrategy, out var remainingPath))
 			{
-				requestMethod = requestMethod?.ToLower();
-				if (requestMethod == "head")
+				if (httpContext.Request.Method.Equals("head", StringComparison.OrdinalIgnoreCase))
 				{
 					// Since there's no information about what you should do with HEAD requests for SOAP APIs, we just silently return "200 OK"
 					httpContext.Response.StatusCode = (int)HttpStatusCode.OK;
 					return;
 				}
 
-				if (requestMethod == "get")
+				var getRequest = httpContext.Request.Method.Equals("get", StringComparison.OrdinalIgnoreCase);
+
+				if (getRequest)
 				{
 					// If GET is not enabled, either for HTTP or HTTPS, return a 403 instead of the WSDL
 					if ((httpContext.Request.IsHttps && !_options.HttpsGetEnabled) || (!httpContext.Request.IsHttps && !_options.HttpGetEnabled))
@@ -104,7 +105,7 @@ namespace SoapCore
 				{
 					_logger.LogDebug("Received SOAP Request for {0} ({1} bytes)", httpContext.Request.Path, httpContext.Request.ContentLength ?? 0);
 
-					if (requestMethod == "get")
+					if (getRequest)
 					{
 						if (!string.IsNullOrWhiteSpace(remainingPath))
 						{
@@ -1167,29 +1168,44 @@ namespace SoapCore
 			await httpContext.Response.WriteAsync(modifiedWsdl);
 		}
 
+		private record XmlNamespaceManagerCacheKey
+		{
+			public SoapMessageEncoder SoapMessageEncoder { get; set; }
+		}
+
 		private XmlNamespaceManager GetXmlNamespaceManager(SoapMessageEncoder messageEncoder)
 		{
-			var xmlNamespaceManager = Namespaces.CreateDefaultXmlNamespaceManager(_options.UseMicrosoftGuid);
-
-			xmlNamespaceManager.AddNamespace("tns", _service.GeneralContract.Namespace);
-
-			if (_options.XmlNamespacePrefixOverrides != null)
+			var key = new XmlNamespaceManagerCacheKey
 			{
-				foreach (var ns in _options.XmlNamespacePrefixOverrides.GetNamespacesInScope(XmlNamespaceScope.Local))
-				{
-					xmlNamespaceManager.AddNamespace(ns.Key, ns.Value);
-				}
-			}
+				SoapMessageEncoder = messageEncoder
+			};
 
-			if (messageEncoder?.XmlNamespaceOverrides != null)
+			return _xmlNamespaceManagersByMessageEncoder.GetOrAdd(messageEncoder?.ToString() ?? "no_encoder", CreateDefaultNamespaceManager(messageEncoder));
+
+			XmlNamespaceManager CreateDefaultNamespaceManager(SoapMessageEncoder messageEncoder)
 			{
-				foreach (var ns in messageEncoder.XmlNamespaceOverrides.GetNamespacesInScope(XmlNamespaceScope.Local))
-				{
-					xmlNamespaceManager.AddNamespace(ns.Key, ns.Value);
-				}
-			}
+				var xmlNamespaceManager = Namespaces.CreateDefaultXmlNamespaceManager(_options.UseMicrosoftGuid);
 
-			return xmlNamespaceManager;
+				xmlNamespaceManager.AddNamespace("tns", _service.GeneralContract.Namespace);
+
+				if (_options.XmlNamespacePrefixOverrides != null)
+				{
+					foreach (var ns in _options.XmlNamespacePrefixOverrides.GetNamespacesInScope(XmlNamespaceScope.Local))
+					{
+						xmlNamespaceManager.AddNamespace(ns.Key, ns.Value);
+					}
+				}
+
+				if (messageEncoder?.XmlNamespaceOverrides != null)
+				{
+					foreach (var ns in messageEncoder.XmlNamespaceOverrides.GetNamespacesInScope(XmlNamespaceScope.Local))
+					{
+						xmlNamespaceManager.AddNamespace(ns.Key, ns.Value);
+					}
+				}
+
+				return xmlNamespaceManager;
+			}
 		}
 	}
 }
