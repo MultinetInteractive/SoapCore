@@ -33,11 +33,11 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
-		public static ParsedMessage FromXmlReader(XmlReader reader, MessageVersion version)
+		public static ParsedMessage FromStreamReader(StreamReader stream, MessageVersion version)
 		{
-			if (reader == null)
+			if (stream == null)
 			{
-				throw new ArgumentNullException(nameof(reader));
+				throw new ArgumentNullException(nameof(stream));
 			}
 
 			if (version == null)
@@ -45,7 +45,7 @@ namespace SoapCore
 				throw new ArgumentNullException(nameof(version));
 			}
 
-			var envelope = XDocument.Load(reader);
+			var envelope = XDocument.Load(stream);
 			var headers = ExtractSoapHeaders(envelope, version);
 
 			//var properties = ExtractSoapProperties(httpRequest);

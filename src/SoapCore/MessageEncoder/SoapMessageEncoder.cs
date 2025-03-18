@@ -158,11 +158,7 @@ namespace SoapCore.MessageEncoder
 
 			var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
 
-			var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
-			using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
-			{
-				message = ParsedMessage.FromXmlReader(xReader, MessageVersion);
-			}
+			message = ParsedMessage.FromStreamReader(streamReaderWithEncoding, MessageVersion);
 
 			return message;
 		}
