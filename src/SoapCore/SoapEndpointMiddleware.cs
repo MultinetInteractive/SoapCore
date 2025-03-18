@@ -1185,7 +1185,7 @@ namespace SoapCore
 				SoapMessageEncoder = messageEncoder
 			};
 
-			return _xmlNamespaceManagersByMessageEncoder.GetOrAdd(messageEncoder?.ToString() ?? "no_encoder", CreateDefaultNamespaceManager(messageEncoder));
+			return _xmlNamespaceManagersByMessageEncoder.GetOrAdd(messageEncoder?.ToString() ?? "no_encoder", _ => CreateDefaultNamespaceManager(messageEncoder));
 
 			XmlNamespaceManager CreateDefaultNamespaceManager(SoapMessageEncoder messageEncoder)
 			{
