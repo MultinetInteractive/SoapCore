@@ -218,20 +218,20 @@ namespace SoapCore
 					if (messageEncoder.IsContentTypeSupported(multipartSection.ContentType, true)
 						|| messageEncoder.IsContentTypeSupported(multipartSection.ContentType, false))
 					{
-						return await messageEncoder.ReadMessageAsync(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
+						return messageEncoder.ReadMessage(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
 					}
 				}
 			}
 
 #if !NETCOREAPP3_0_OR_GREATER
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #else
 			if (httpContext.Request.Body is FileBufferingReadStream)
 			{
-				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+				return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 			}
 
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return messageEncoder.ReadMessage(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #endif
 		}
 
@@ -469,11 +469,13 @@ namespace SoapCore
 				reader = requestMessage.GetReaderAtBodyContents();
 			}
 
+			var actionString = soapAction.ToString();
+
 			try
 			{
 				if (!TryGetOperation(soapAction, out var operation))
 				{
-					throw new InvalidOperationException($"No operation found for specified action: {soapAction}");
+					throw new InvalidOperationException($"No operation found for specified action: {soapAction.ToString()}");
 				}
 
 				_logger.LogInformation("Request for operation {0}.{1} received", operation.Contract.Name, operation.Name);
@@ -522,7 +524,7 @@ namespace SoapCore
 					resultOutDictionary[parameterInfo.Name] = arguments[parameterInfo.Index];
 				}
 
-				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, soapAction, requestMessage, messageEncoder);
+				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, actionString, requestMessage, messageEncoder);
 
 				httpContext.Response.ContentType = httpContext.Request.ContentType;
 				httpContext.Response.Headers["SOAPAction"] = responseMessage.Headers.Action;
@@ -552,17 +554,33 @@ namespace SoapCore
 			return responseMessage;
 		}
 
-		private bool TryGetOperation(string methodName, out OperationDescription operation)
+		private bool TryGetOperation(string methodNameStr, out OperationDescription operation)
 		{
-			operation = _service.Operations.FirstOrDefault(o => o.SoapAction.Equals(methodName, StringComparison.OrdinalIgnoreCase)
-							|| o.Name.Equals(HeadersHelper.GetTrimmedSoapAction(methodName), StringComparison.OrdinalIgnoreCase)
-							|| methodName.Equals(HeadersHelper.GetTrimmedSoapAction(o.Name), StringComparison.OrdinalIgnoreCase));
+			var methodName = methodNameStr.AsSpan();
+			operation = null;
+
+			foreach (var o in _service.Operations)
+			{
+				if (o.SoapAction.AsSpan().Equals(methodName, StringComparison.OrdinalIgnoreCase)
+							|| o.Name.AsSpan().Equals(HeadersHelper.GetTrimmedSoapAction(methodName), StringComparison.OrdinalIgnoreCase)
+							|| methodName.Equals(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase))
+				{
+					operation = o;
+					break;
+				}
+			}
 
 			if (operation == null)
 			{
-				operation = _service.Operations.FirstOrDefault(o =>
-							methodName.Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction), StringComparison.OrdinalIgnoreCase)
-							|| methodName.IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name), StringComparison.OrdinalIgnoreCase) >= 0);
+				foreach (var o in _service.Operations)
+				{
+					if (methodName.Equals(HeadersHelper.GetTrimmedClearedSoapAction(o.SoapAction.AsSpan()), StringComparison.OrdinalIgnoreCase)
+							|| methodName.IndexOf(HeadersHelper.GetTrimmedSoapAction(o.Name.AsSpan()), StringComparison.OrdinalIgnoreCase) >= 0)
+					{
+						operation = o;
+						break;
+					}
+				}
 			}
 
 			return operation != null;
@@ -612,8 +630,8 @@ namespace SoapCore
 				var messageHeaderMembers = responseObject.GetType().GetMembersWithAttribute<MessageHeaderAttribute>();
 				foreach (var messageHeaderMember in messageHeaderMembers)
 				{
-					var messageHeaderAttribute = messageHeaderMember.GetCustomAttribute<MessageHeaderAttribute>();
-					responseMessage.Headers.Add(MessageHeader.CreateHeader(messageHeaderAttribute.Name ?? messageHeaderMember.Name, messageHeaderAttribute.Namespace ?? operation.Contract.Namespace, messageHeaderMember.GetPropertyOrFieldValue(responseObject), messageHeaderAttribute.MustUnderstand));
+					var messageHeaderAttribute = messageHeaderMember.Attribute;
+					responseMessage.Headers.Add(MessageHeader.CreateHeader(messageHeaderAttribute.Name ?? messageHeaderMember.Member.Name, messageHeaderAttribute.Namespace ?? operation.Contract.Namespace, messageHeaderMember.Member.GetPropertyOrFieldValue(responseObject), messageHeaderAttribute.MustUnderstand));
 				}
 			}
 
@@ -640,9 +658,9 @@ namespace SoapCore
 			}
 
 			// Execute Mvc ActionFilters
-			foreach (var actionFilterAttr in operation.DispatchMethod.CustomAttributes.Where(a => a.AttributeType.Name == "ServiceFilterAttribute"))
+			foreach (var actionFilterAttr in operation.DispatchMethod.GetCustomAttributes<ServiceFilterAttribute>())
 			{
-				var actionFilter = serviceProvider.GetService(actionFilterAttr.ConstructorArguments[0].Value as Type);
+				var actionFilter = serviceProvider.GetService(actionFilterAttr.ServiceType);
 				actionFilter.GetType().GetMethod("OnSoapActionExecuting")?.Invoke(actionFilter, new[] { operation.Name, arguments, httpContext, modelBindingOutput });
 			}
 
@@ -824,13 +842,15 @@ namespace SoapCore
 			MessageContractAttribute messageContractAttribute,
 			object[] arguments)
 		{
-			var messageHeadersMembers = parameterType.GetPropertyOrFieldMembers()
-				.Where(x => x.GetCustomAttribute<MessageHeaderAttribute>() != null)
-				.Select(mi => new
-				{
-					MemberInfo = mi,
-					MessageHeaderMemberAttribute = mi.GetCustomAttribute<MessageHeaderAttribute>()
-				}).ToArray();
+
+			var messageHeadersMembers = (from p in parameterType.GetPropertyOrFieldMembers()
+					   let attr = p.GetCustomAttribute<MessageHeaderAttribute>()
+					   where attr != null
+					   select new
+					   {
+						   MemberInfo = p,
+						   MessageHeaderMemberAttribute = attr
+					   }).ToArray();
 
 			var wrapperObject = Activator.CreateInstance(parameterInfo.Parameter.ParameterType);
 
@@ -856,12 +876,14 @@ namespace SoapCore
 				}
 			}
 
-			var messageBodyMembers = parameterType.GetPropertyOrFieldMembers()
-				.Where(x => x.GetCustomAttribute<MessageBodyMemberAttribute>() != null).Select(mi => new
-				{
-					Member = mi,
-					MessageBodyMemberAttribute = mi.GetCustomAttribute<MessageBodyMemberAttribute>()
-				}).OrderBy(x => x.MessageBodyMemberAttribute.Order);
+			var messageBodyMembers = (from p in parameterType.GetPropertyOrFieldMembers()
+									  let attr = p.GetCustomAttribute<MessageBodyMemberAttribute>()
+									  where attr != null
+									  select new
+									  {
+										  Member = p,
+										  MessageBodyMemberAttribute = attr
+									  }).OrderBy(x => x.MessageBodyMemberAttribute.Order);
 
 			if (messageContractAttribute.IsWrapped)
 			{
@@ -999,7 +1021,7 @@ namespace SoapCore
 
 			foreach (string key in httpProperty.Headers.Keys)
 			{
-				httpContext.Response.Headers.Add(key, httpProperty.Headers.GetValues(key));
+				httpContext.Response.Headers.Append(key, httpProperty.Headers.GetValues(key));
 			}
 		}
 

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -57,7 +58,7 @@ namespace SoapCore
 		{
 			int blockSize = 256;
 			int bytesRead = 0;
-			byte[] block = new byte[blockSize];
+			byte[] block = ArrayPool<byte>.Shared.Rent(blockSize);
 			var stream = (Stream)value;
 			stream.Position = 0;
 
@@ -76,9 +77,11 @@ namespace SoapCore
 				if (blockSize < 65536 && bytesRead == blockSize)
 				{
 					blockSize = blockSize * 16;
-					block = new byte[blockSize];
+					ArrayPool<byte>.Shared.Return(block);
+					block = ArrayPool<byte>.Shared.Rent(blockSize);
 				}
 			}
+			ArrayPool<byte>.Shared.Return(block);
 		}
 
 		private void OnWriteXmlSerializerBodyContents(XmlDictionaryWriter writer)
@@ -147,11 +150,7 @@ namespace SoapCore
 
 					if (shouldInline)
 					{
-						var memberInformation = resultType.GetMembersWithAttribute<MessageBodyMemberAttribute>().Select(mi => new
-						{
-							Member = mi,
-							MessageBodyMemberAttribute = mi.GetCustomAttribute<MessageBodyMemberAttribute>()
-						}).OrderBy(x => x.MessageBodyMemberAttribute?.Order ?? 0);
+						var memberInformation = resultType.GetMembersWithAttribute<MessageBodyMemberAttribute>().OrderBy(x => x.Attribute?.Order ?? 0);
 
 						if (messageContractAttribute != null && messageContractAttribute.IsWrapped)
 						{
@@ -163,8 +162,8 @@ namespace SoapCore
 							var memberType = memberInfo.Member.GetPropertyOrFieldType();
 							var memberValue = memberInfo.Member.GetPropertyOrFieldValue(_result);
 
-							var memberName = memberInfo.MessageBodyMemberAttribute?.Name ?? memberInfo.Member.Name;
-							var memberNamespace = memberInfo.MessageBodyMemberAttribute?.Namespace ?? _serviceNamespace;
+							var memberName = memberInfo.Attribute?.Name ?? memberInfo.Member.Name;
+							var memberNamespace = memberInfo.Attribute?.Namespace ?? _serviceNamespace;
 
 							var serializer = CachedXmlSerializer.GetXmlSerializer(memberType, memberName, memberNamespace);
 

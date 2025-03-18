@@ -139,10 +139,13 @@ namespace SoapCore
 			throw new NotImplementedException($"Unable to get value out of member with type {memberInfo.GetType()}");
 		}
 
-		internal static IEnumerable<MemberInfo> GetMembersWithAttribute<TAttribute>(this Type type)
-			where TAttribute : Attribute
+		internal static IEnumerable<MemberWithAttribute<TAttribute>> GetMembersWithAttribute<TAttribute>(this Type type)
+	where TAttribute : Attribute
 		{
-			return GetPropertyOrFieldMembers(type).Where(x => x.GetCustomAttribute<TAttribute>() != null);
+			return from p in GetPropertyOrFieldMembers(type)
+				   let attr = p.GetCustomAttribute<TAttribute>()
+				   where attr != null
+				   select new MemberWithAttribute<TAttribute>(p, attr);
 		}
 
 		internal static bool TryGetBaseTypeWithKnownTypes(this Type type, out Type result)
