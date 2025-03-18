@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Resources;
@@ -18,6 +19,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,6 +45,7 @@ namespace SoapCore
 		private readonly StringComparison _pathComparisonStrategy;
 		private readonly SoapMessageEncoder[] _messageEncoders;
 		private readonly IXmlSerializationHandler _serializerHandler;
+		private static IOperationInvoker _operationInvoker;
 
 		private readonly ConcurrentDictionary<string, XmlNamespaceManager> _xmlNamespaceManagersByMessageEncoder = new ConcurrentDictionary<string, XmlNamespaceManager>();
 		public SoapEndpointMiddleware(ILogger<SoapEndpointMiddleware<T_MESSAGE>> logger, RequestDelegate next, SoapOptions options, IServiceProvider serviceProvider)
@@ -72,6 +75,8 @@ namespace SoapCore
 				var encoderOptions = options.EncoderOptions[i];
 				_messageEncoders[i] = new SoapMessageEncoder(encoderOptions.MessageVersion, encoderOptions.WriteEncoding, encoderOptions.OverwriteResponseContentType, encoderOptions.ReaderQuotas, options.OmitXmlDeclaration, options.CheckXmlCharacters, encoderOptions.XmlNamespaceOverrides, encoderOptions.BindingName, encoderOptions.PortName, options.NormalizeNewLines, encoderOptions.MaxSoapHeaderSize);
 			}
+
+			_operationInvoker = serviceProvider.GetService<IOperationInvoker>() ?? new DefaultOperationInvoker();
 		}
 
 		public async Task Invoke(HttpContext httpContext, IServiceProvider scopedServiceProvider)
@@ -386,15 +391,10 @@ namespace SoapCore
 
 			if (responseObject is IActionResult actionResult)
 			{
-				var type = actionResult.GetType();
-				context.Response.StatusCode = (int)(actionResult
-					.GetType()
-					.GetProperty("StatusCode")?
-					.GetValue(actionResult, null) ?? HttpStatusCode.OK);
-				responseObject = actionResult
-					.GetType()
-					.GetProperty("Value")?
-					.GetValue(actionResult, null);
+				var res = actionResult.ExtractResult();
+
+				context.Response.StatusCode = res.StatusCode ?? 200;
+				responseObject = res.Value;
 			}
 			else if (operation.IsOneWay)
 			{
@@ -416,6 +416,17 @@ namespace SoapCore
 
 			context.Response.ContentType = "text/xml";
 
+#if NETCOREAPP3_1_OR_GREATER
+			XmlWriter writer = XmlWriter.Create(context.Response.BodyWriter.AsStream(), new XmlWriterSettings
+			{
+				Encoding = DefaultEncodings.UTF8,
+			});
+			XmlDictionaryWriter dictionaryWriter = XmlDictionaryWriter.CreateDictionaryWriter(writer);
+
+			bodyWriter.WriteBodyContents(dictionaryWriter);
+			dictionaryWriter.Flush();
+			await context.Response.BodyWriter.FlushAsync();
+#else
 			var ms = new MemoryStream();
 			XmlWriter writer = XmlWriter.Create(ms, new XmlWriterSettings
 			{
@@ -427,6 +438,7 @@ namespace SoapCore
 			dictionaryWriter.Flush();
 			ms.Seek(0, SeekOrigin.Begin);
 			await ms.CopyToAsync(context.Response.Body);
+#endif
 		}
 
 		private Func<Message, Task<Message>> MakeProcessorPipe(ISoapMessageProcessor[] soapMessageProcessors, HttpContext httpContext, Func<Message, Task<Message>> processMessageFunc)
@@ -458,9 +470,7 @@ namespace SoapCore
 			}
 
 			var messageInspector2s = serviceProvider.GetServices<IMessageInspector2>();
-			var correlationObjects2 = default(List<(IMessageInspector2 inspector, object correlationObject)>);
-
-			correlationObjects2 = messageInspector2s.Select(mi => (inspector: mi, correlationObject: mi.AfterReceiveRequest(ref requestMessage, _service))).ToList();
+			var correlationObjects2 = messageInspector2s.Select(mi => (inspector: mi, correlationObject: mi.AfterReceiveRequest(ref requestMessage, _service))).ToList();
 
 			// for getting soapaction and parameters in (optional) body
 			// GetReaderAtBodyContents must not be called twice in one request
@@ -470,13 +480,11 @@ namespace SoapCore
 				reader = requestMessage.GetReaderAtBodyContents();
 			}
 
-			var actionString = soapAction.ToString();
-
 			try
 			{
 				if (!TryGetOperation(soapAction, out var operation))
 				{
-					throw new InvalidOperationException($"No operation found for specified action: {soapAction.ToString()}");
+					throw new InvalidOperationException($"No operation found for specified action: {soapAction}");
 				}
 
 				_logger.LogInformation("Request for operation {0}.{1} received", operation.Contract.Name, operation.Name);
@@ -491,8 +499,7 @@ namespace SoapCore
 
 				ExecuteFiltersAndTune(httpContext, serviceProvider, operation, arguments, serviceInstance);
 
-				var invoker = serviceProvider.GetService<IOperationInvoker>() ?? new DefaultOperationInvoker();
-				var responseObject = await invoker.InvokeAsync(operation.DispatchMethod, serviceInstance, arguments);
+				var responseObject = await _operationInvoker.InvokeAsync(operation.DispatchMethod, serviceInstance, arguments);
 
 				// If response has an HTTP status code attached
 				if (responseObject is IConvertToActionResult convertToActionResult)
@@ -502,16 +509,10 @@ namespace SoapCore
 
 				if (responseObject is IActionResult actionResult)
 				{
-					var type = actionResult.GetType();
-					httpContext.Response.StatusCode = (int)(actionResult
-						.GetType()
-						.GetProperty("StatusCode")?
-						.GetValue(actionResult, null) ?? HttpStatusCode.OK);
-					responseObject = null;
-					responseObject = actionResult
-						.GetType()
-						.GetProperty("Value")?
-						.GetValue(actionResult, null);
+					var res = actionResult.ExtractResult();
+
+					httpContext.Response.StatusCode = res.StatusCode ?? 200;
+					responseObject = res.Value;
 				}
 				else if (operation.IsOneWay)
 				{
@@ -525,7 +526,7 @@ namespace SoapCore
 					resultOutDictionary[parameterInfo.Name] = arguments[parameterInfo.Index];
 				}
 
-				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, actionString, requestMessage, messageEncoder);
+				responseMessage = CreateResponseMessage(operation, responseObject, resultOutDictionary, soapAction, requestMessage, messageEncoder);
 
 				httpContext.Response.ContentType = httpContext.Request.ContentType;
 				httpContext.Response.Headers["SOAPAction"] = responseMessage.Headers.Action;
@@ -701,11 +702,12 @@ namespace SoapCore
 				{
 					xmlReader.ReadStartElement(operation.Name, operation.Contract.Namespace);
 
+					var parameterDictionary = operation.InParameters.ToDictionary(p => p.Name);
+
 					var lastParameterIndex = -1;
 					while (!xmlReader.EOF)
 					{
-						var parameterInfo = operation.InParameters.FirstOrDefault(p => p.Name == xmlReader.LocalName);
-						if (parameterInfo == null || alreadyProcessedParameters[parameterInfo.Index])
+						if (!parameterDictionary.TryGetValue(xmlReader.LocalName, out var parameterInfo) || alreadyProcessedParameters[parameterInfo.Index])
 						{
 							xmlReader.Skip();
 							continue;
@@ -1014,10 +1016,13 @@ namespace SoapCore
 
 			httpContext.Response.StatusCode = (int)httpProperty.StatusCode;
 
-			var feature = httpContext.Features.Get<IHttpResponseFeature>();
-			if (feature != null && !string.IsNullOrEmpty(httpProperty.StatusDescription))
+			if (!string.IsNullOrEmpty(httpProperty.StatusDescription))
 			{
-				feature.ReasonPhrase = httpProperty.StatusDescription;
+				var feature = httpContext.Features.Get<IHttpResponseFeature>();
+				if (feature != null)
+				{
+					feature.ReasonPhrase = httpProperty.StatusDescription;
+				}
 			}
 
 			foreach (string key in httpProperty.Headers.Keys)

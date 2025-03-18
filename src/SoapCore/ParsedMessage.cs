@@ -76,16 +76,9 @@ namespace SoapCore
 		{
 			var reader = new XDocumentXmlReader(_body);
 
-			//var reader = XmlReader.Create(new StringReader(_body.ToString()));
 			XNamespace soapNs = _version.Envelope.Namespace();
 
-			while (reader.Read()) // Advance through the document
-			{
-				if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "Body" && reader.NamespaceURI.Equals(soapNs.ToString(), StringComparison.OrdinalIgnoreCase))
-				{
-					break;
-				}
-			}
+			reader.ReadToFollowing("Body", soapNs.ToString());
 
 			while (reader.Read() && reader.NodeType != XmlNodeType.Element && reader.NodeType != XmlNodeType.EndElement)
 			{
