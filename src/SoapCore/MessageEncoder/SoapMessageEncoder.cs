@@ -193,10 +193,13 @@ namespace SoapCore.MessageEncoder
 				NewLineHandling = _normalizeNewLines ? NewLineHandling.Replace : NewLineHandling.None,
 			}))
 			{
-				using var xmlWriter = XmlDictionaryWriter.CreateDictionaryWriter(xmlTextWriter);
-				message.WriteMessage(xmlWriter);
-				xmlWriter.WriteEndDocument();
-				xmlWriter.Flush();
+				message.WriteMessage(xmlTextWriter);
+				xmlTextWriter.WriteEndDocument();
+				xmlTextWriter.Flush();
+				//using var xmlWriter = XmlDictionaryWriter.CreateDictionaryWriter(xmlTextWriter);
+				//message.WriteMessage(xmlWriter);
+				//xmlWriter.WriteEndDocument();
+				//xmlWriter.Flush();
 			}
 
 			//Set Content-length in Response
