@@ -74,6 +74,16 @@ namespace SoapCore.MessageEncoder
 
 		public XmlNamespaceManager XmlNamespaceOverrides { get; }
 
+		public override int GetHashCode()
+		{
+			return $"{MessageVersion.ToString()},{BindingName},{PortName}".GetHashCode();
+		}
+
+		public override string ToString()
+		{
+			return $"{MessageVersion.ToString()},{BindingName},{PortName}";
+		}
+
 		public bool IsContentTypeSupported(string contentType, bool checkCharset)
 		{
 			if (contentType == null)
@@ -146,25 +156,9 @@ namespace SoapCore.MessageEncoder
 				readEncoding = _writeEncoding;
 			}
 
-			var supportXmlDictionaryReader = SoapMessageEncoderDefaults.TryValidateEncoding(readEncoding, out _);
+			var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
 
-			if (supportXmlDictionaryReader)
-			{
-				using (var xdReader = XmlDictionaryReader.CreateTextReader(stream, readEncoding, ReaderQuotas, dictionaryReader => { }))
-				{
-					message = ParsedMessage.FromXmlReader(xdReader, MessageVersion);
-				}
-			}
-			else
-			{
-				var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
-
-				var xmlReaderSettings = new XmlReaderSettings() { XmlResolver = null, IgnoreWhitespace = true, DtdProcessing = DtdProcessing.Prohibit, CloseInput = true };
-				using (var xReader = XmlReader.Create(streamReaderWithEncoding, xmlReaderSettings))
-				{
-					message = ParsedMessage.FromXmlReader(xReader, MessageVersion);
-				}
-			}
+			message = ParsedMessage.FromStreamReader(streamReaderWithEncoding, MessageVersion);
 
 			return message;
 		}
@@ -199,10 +193,13 @@ namespace SoapCore.MessageEncoder
 				NewLineHandling = _normalizeNewLines ? NewLineHandling.Replace : NewLineHandling.None,
 			}))
 			{
-				using var xmlWriter = XmlDictionaryWriter.CreateDictionaryWriter(xmlTextWriter);
-				message.WriteMessage(xmlWriter);
-				xmlWriter.WriteEndDocument();
-				xmlWriter.Flush();
+				message.WriteMessage(xmlTextWriter);
+				xmlTextWriter.WriteEndDocument();
+				xmlTextWriter.Flush();
+				//using var xmlWriter = XmlDictionaryWriter.CreateDictionaryWriter(xmlTextWriter);
+				//message.WriteMessage(xmlWriter);
+				//xmlWriter.WriteEndDocument();
+				//xmlWriter.Flush();
 			}
 
 			//Set Content-length in Response

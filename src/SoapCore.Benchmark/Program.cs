@@ -92,12 +92,12 @@ namespace SoapCore.Benchmark
 
 			//Console.WriteLine("Klicka");
 			//Console.ReadKey();
-			
+
 
 			//Console.WriteLine("Running...");
 
 			//await eb.Echo();
-			
+
 
 			//Console.WriteLine("Klicka igen");
 			//Console.ReadKey();
