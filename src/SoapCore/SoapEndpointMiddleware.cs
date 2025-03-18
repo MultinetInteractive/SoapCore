@@ -1172,12 +1172,7 @@ namespace SoapCore
 			httpContext.Response.ContentType = "text/xml;charset=UTF-8";
 			await httpContext.Response.WriteAsync(modifiedWsdl);
 		}
-
-		private record XmlNamespaceManagerCacheKey
-		{
-			public SoapMessageEncoder SoapMessageEncoder { get; set; }
-		}
-
+			
 		private XmlNamespaceManager GetXmlNamespaceManager(SoapMessageEncoder messageEncoder)
 		{
 			return _xmlNamespaceManagersByMessageEncoder.GetOrAdd(messageEncoder?.ToString() ?? "no_encoder", _ => CreateDefaultNamespaceManager(messageEncoder));
