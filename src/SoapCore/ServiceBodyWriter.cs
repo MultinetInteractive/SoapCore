@@ -313,14 +313,14 @@ namespace SoapCore
 					if (operationResultType.IsAssignableFrom(resultType))
 					{
 						serializer = operationResultType.TryGetBaseTypeWithKnownTypes(out Type operationResultBaseTypeWithKnownTypes)
-							? new DataContractSerializer(operationResultBaseTypeWithKnownTypes, _resultName, _serviceNamespace, serviceKnownTypes)
-							: new DataContractSerializer(operationResultType, _resultName, _serviceNamespace, serviceKnownTypes);
+							? CachedDataContractSerializer.GetDataContractSerializer(operationResultBaseTypeWithKnownTypes, _resultName, _serviceNamespace, serviceKnownTypes)
+							: CachedDataContractSerializer.GetDataContractSerializer(operationResultType, _resultName, _serviceNamespace, serviceKnownTypes);
 					}
 					else
 					{
 						serializer = resultType.TryGetBaseTypeWithKnownTypes(out Type resultBaseTypeWithKnownTypes)
-							? new DataContractSerializer(resultBaseTypeWithKnownTypes, _resultName, _serviceNamespace, serviceKnownTypes)
-							: new DataContractSerializer(resultType, _resultName, _serviceNamespace, serviceKnownTypes);
+							? CachedDataContractSerializer.GetDataContractSerializer(resultBaseTypeWithKnownTypes, _resultName, _serviceNamespace, serviceKnownTypes)
+							: CachedDataContractSerializer.GetDataContractSerializer(resultType, _resultName, _serviceNamespace, serviceKnownTypes);
 					}
 
 					serializer.WriteObject(writer, _result);
@@ -360,7 +360,7 @@ namespace SoapCore
 						.GetServiceKnownTypesHierarchy()
 						.Select(x => x.Type);
 
-					var serializer = new DataContractSerializer(outResultType, serviceKnownTypes);
+					var serializer = CachedDataContractSerializer.GetDataContractSerializer(outResultType, serviceKnownTypes);
 					serializer.WriteObject(stream, outResult.Value);
 
 					stream.Position = 0;
