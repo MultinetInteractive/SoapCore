@@ -37,7 +37,8 @@ namespace SoapCore
 		public override int ReadContentAsBase64(byte[] buffer, int index, int count)
 		{
 			EnsureBinaryStream(true);
-			return _binaryStream!.Read(buffer, index, count);
+
+			return _binaryStream!.Read(buffer, 0, count);
 		}
 
 		public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
@@ -53,7 +54,8 @@ namespace SoapCore
 		public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
 		{
 			EnsureBinaryStream(false);
-			return _binaryStream!.Read(buffer, index, count);
+
+			return _binaryStream!.Read(buffer, 0, count);
 		}
 
 		public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
