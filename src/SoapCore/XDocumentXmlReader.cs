@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -36,9 +37,7 @@ namespace SoapCore
 
 		public override int ReadContentAsBase64(byte[] buffer, int index, int count)
 		{
-			EnsureBinaryStream(true);
-
-			return _binaryStream!.Read(buffer, 0, count);
+			return ReadBinary(buffer, index, count, true);
 		}
 
 		public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
@@ -53,9 +52,7 @@ namespace SoapCore
 
 		public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
 		{
-			EnsureBinaryStream(false);
-
-			return _binaryStream!.Read(buffer, 0, count);
+			return ReadBinary(buffer, index, count, false);
 		}
 
 		public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
@@ -66,6 +63,18 @@ namespace SoapCore
 			}
 
 			return ReadContentAsBinHex(buffer, index, count);
+		}
+
+		public int ReadBinary(byte[] buffer, int index, int count, bool isBase64)
+		{
+			EnsureBinaryStream(isBase64);
+
+			if (_binaryStream.Position != index)
+			{
+				_binaryStream.Position = index;
+			}
+
+			return _binaryStream!.Read(buffer, 0, count);
 		}
 
 		public override bool Read()
