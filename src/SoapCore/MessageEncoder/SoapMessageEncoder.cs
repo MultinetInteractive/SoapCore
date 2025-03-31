@@ -128,7 +128,7 @@ namespace SoapCore.MessageEncoder
 			return false;
 		}
 
-		public Message ReadMessage(PipeReader pipeReader, int maxSizeOfHeaders, string contentType)
+		public async Task<Message> ReadMessageAsync(PipeReader pipeReader, int maxSizeOfHeaders, string contentType)
 		{
 			if (pipeReader == null)
 			{
@@ -136,10 +136,10 @@ namespace SoapCore.MessageEncoder
 			}
 
 			using var stream = pipeReader.AsStream(true);
-			return ReadMessage(stream, maxSizeOfHeaders, contentType);
+			return await ReadMessageAsync(stream, maxSizeOfHeaders, contentType);
 		}
 
-		public Message ReadMessage(Stream stream, int maxSizeOfHeaders, string contentType)
+		public async Task<Message> ReadMessageAsync(Stream stream, int maxSizeOfHeaders, string contentType)
 		{
 			if (stream == null)
 			{
@@ -158,7 +158,7 @@ namespace SoapCore.MessageEncoder
 
 			var streamReaderWithEncoding = new StreamReader(stream, readEncoding);
 
-			message = ParsedMessage.FromStreamReader(streamReaderWithEncoding, MessageVersion);
+			message = await ParsedMessage.FromStreamReaderAsync(streamReaderWithEncoding, MessageVersion);
 
 			return message;
 		}

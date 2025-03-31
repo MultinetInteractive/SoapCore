@@ -224,20 +224,20 @@ namespace SoapCore
 					if (messageEncoder.IsContentTypeSupported(multipartSection.ContentType, true)
 						|| messageEncoder.IsContentTypeSupported(multipartSection.ContentType, false))
 					{
-						return messageEncoder.ReadMessage(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
+						return await messageEncoder.ReadMessageAsync(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
 					}
 				}
 			}
 
 #if !NETCOREAPP3_0_OR_GREATER
-			return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #else
 			if (httpContext.Request.Body is FileBufferingReadStream)
 			{
-				return messageEncoder.ReadMessage(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 			}
 
-			return messageEncoder.ReadMessage(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
+			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
 #endif
 		}
 
