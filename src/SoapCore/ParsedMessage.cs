@@ -34,6 +34,9 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
+#if !NETCOREAPP3_0_OR_GREATER
+#pragma warning disable CS1998 // XDocument.LoadAsync does only exists in NETCOREAPP3_0_OR_GREATER
+#endif
 		public static async Task<ParsedMessage> FromStreamReaderAsync(StreamReader stream, MessageVersion version)
 		{
 			if (stream == null)
@@ -46,7 +49,7 @@ namespace SoapCore
 				throw new ArgumentNullException(nameof(version));
 			}
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER
 			var envelope = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
 #else
 			var envelope = XDocument.Load(stream);
@@ -58,6 +61,9 @@ namespace SoapCore
 
 			return new ParsedMessage(headers, new MessageProperties(), version, body, isEmpty);
 		}
+#if !NETCOREAPP3_0_OR_GREATER
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+#endif
 
 		public XDocument GetBodyAsXDocument()
 		{
