@@ -69,12 +69,7 @@ namespace SoapCore
 		{
 			EnsureBinaryStream(isBase64);
 
-			if (_binaryStream.Position != index)
-			{
-				_binaryStream.Position = index;
-			}
-
-			return _binaryStream!.Read(buffer, 0, count);
+			return _binaryStream!.Read(buffer, index, count);
 		}
 
 		public override bool Read()
