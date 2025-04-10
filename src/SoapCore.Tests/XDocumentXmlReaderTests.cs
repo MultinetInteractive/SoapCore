@@ -30,13 +30,12 @@ namespace SoapCore.Tests
 
 			reader.Read();
 			reader.Read();
-			reader.Read();
 
 			var buffer = new byte[1024];
 			var ms = new MemoryStream();
 			while (true)
 			{
-				var i = reader.ReadContentAsBase64(buffer, 0, 1024);
+				var i = reader.ReadElementContentAsBase64(buffer, 0, 1024);
 				ms.Write(buffer, 0, i);
 
 				if (i < buffer.Length)
