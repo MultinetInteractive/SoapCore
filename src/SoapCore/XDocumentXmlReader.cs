@@ -75,7 +75,13 @@ namespace SoapCore
 		{
 			EnsureBinaryStream(isBase64);
 
-			return _binaryStream!.Read(buffer, index, count);
+			var result = _binaryStream!.Read(buffer, index, count);
+			if (_binaryStream.Position == _binaryStream.Length)
+			{
+				_isReadingBinary = false;
+			}
+
+			return result;
 		}
 
 		public override bool Read()
