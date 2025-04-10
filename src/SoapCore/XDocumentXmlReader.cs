@@ -42,9 +42,12 @@ namespace SoapCore
 
 		public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
 		{
-			if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
+			if (!_isReadingBinary)
 			{
-				return 0;
+				if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
+				{
+					return 0;
+				}
 			}
 
 			return ReadContentAsBase64(buffer, index, count);
@@ -57,9 +60,12 @@ namespace SoapCore
 
 		public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
 		{
-			if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
+			if (!_isReadingBinary)
 			{
-				return 0;
+				if (!Read() || (_reader.NodeType != XmlNodeType.Text && _reader.NodeType != XmlNodeType.Whitespace))
+				{
+					return 0;
+				}
 			}
 
 			return ReadContentAsBinHex(buffer, index, count);
