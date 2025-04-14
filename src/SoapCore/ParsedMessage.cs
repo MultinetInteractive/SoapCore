@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.ServiceModel.Channels;
 using System.Text;
@@ -34,7 +35,7 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
-		public static async Task<ParsedMessage> FromStreamReaderAsync(StreamReader stream, MessageVersion version, CancellationToken ct)
+		public static async Task<ParsedMessage> FromStreamReaderAsync(Stream stream, Encoding readEncoding, MessageVersion version, CancellationToken ct)
 		{
 			if (stream == null)
 			{
@@ -46,11 +47,21 @@ namespace SoapCore
 				throw new ArgumentNullException(nameof(version));
 			}
 
+			var pipe = new Pipe();
+
+			var reader = new StreamReader(pipe.Reader.AsStream(), readEncoding);
+
 #if NETCOREAPP3_0_OR_GREATER
-			var envelope = await XDocument.LoadAsync(stream, LoadOptions.None, ct);
+			var envelopeTask = XDocument.LoadAsync(reader, LoadOptions.None, ct);
+			await stream.CopyToAsync(pipe.Writer.AsStream(), ct);
 #else
-			var envelope = await Task.Factory.StartNew(() => { return XDocument.Load(stream); }, ct);
+			var envelopeTask = Task.Factory.StartNew(() => { return XDocument.Load(reader); }, ct);
+			await stream.CopyToAsync(pipe.Writer.AsStream());
 #endif
+			await pipe.Writer.CompleteAsync();
+
+			var envelope = await envelopeTask;
+
 			var headers = ExtractSoapHeaders(envelope, version);
 
 			//var properties = ExtractSoapProperties(httpRequest);
