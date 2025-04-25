@@ -944,6 +944,14 @@ namespace SoapCore
 			{
 				status = StatusCodes.Status400BadRequest;
 			}
+			else if (exception is OperationCanceledException)
+			{
+#if NET8_0_OR_GREATER
+				status = StatusCodes.Status499ClientClosedRequest;
+#else
+				status = StatusCodes.Status408RequestTimeout;
+#endif
+			}
 
 			return CreateErrorResponseMessage(exception, status, serviceProvider, requestMessage, messageEncoder, httpContext);
 		}
