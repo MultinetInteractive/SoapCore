@@ -77,13 +77,18 @@ namespace SoapCore
 
 		protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
 		{
-			using (var reader = GetReaderAtBodyContents())
+			using (var reader = InternalGetReaderAtBodyContents())
 			{
 				writer.WriteNode(reader, true);
 			}
 		}
 
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
+		{
+			return InternalGetReaderAtBodyContents();
+		}
+
+		private XmlDictionaryReader InternalGetReaderAtBodyContents()
 		{
 			var reader = new XDocumentXmlReader(_body);
 
