@@ -229,16 +229,7 @@ namespace SoapCore
 				}
 			}
 
-#if !NETCOREAPP3_0_OR_GREATER
 			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType, httpContext.RequestAborted);
-#else
-			if (httpContext.Request.Body is FileBufferingReadStream)
-			{
-				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType, httpContext.RequestAborted);
-			}
-
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType, httpContext.RequestAborted);
-#endif
 		}
 
 		private async Task ProcessMeta(HttpContext httpContext, bool showDocumentation)

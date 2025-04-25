@@ -129,17 +129,6 @@ namespace SoapCore.MessageEncoder
 			return false;
 		}
 
-		public async Task<Message> ReadMessageAsync(PipeReader pipeReader, int maxSizeOfHeaders, string contentType, CancellationToken ct)
-		{
-			if (pipeReader == null)
-			{
-				throw new ArgumentNullException(nameof(pipeReader));
-			}
-
-			using var stream = pipeReader.AsStream(true);
-			return await ReadMessageAsync(stream, maxSizeOfHeaders, contentType, ct);
-		}
-
 		public async Task<Message> ReadMessageAsync(Stream stream, int maxSizeOfHeaders, string contentType, CancellationToken ct)
 		{
 			if (stream == null)
