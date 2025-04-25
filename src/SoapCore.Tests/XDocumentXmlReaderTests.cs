@@ -3,8 +3,10 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -51,6 +53,25 @@ namespace SoapCore.Tests
 			Assert.IsTrue(b64buffer.SequenceEqual(ms.ToArray()));
 
 			Assert.AreEqual(1336, ms.Length);
+		}
+
+		[TestMethod]
+		public async Task WriteTwice()
+		{
+			var body = $@"<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soapenv:Body>
+    <Ping xmlns=""http://tempuri.org/"">
+      <s>1</s>
+    </Ping>
+  </soapenv:Body>
+</soapenv:Envelope>
+";
+			ParsedMessage pm = await ParsedMessage.FromStreamReaderAsync(new StreamReader(new MemoryStream(Encoding.Default.GetBytes(body))), MessageVersion.Soap12);
+
+			var dw = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(new MemoryStream()));
+
+			pm.WriteBodyContents(dw);
+			pm.WriteBodyContents(dw);
 		}
 	}
 }
