@@ -1,5 +1,7 @@
 using System;
+using System.Buffers;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Reflection;
 using System.ServiceModel.Channels;
@@ -35,10 +37,7 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
-#if !NETCOREAPP3_0_OR_GREATER
-#pragma warning disable CS1998 // XDocument.LoadAsync does only exists in NETCOREAPP3_0_OR_GREATER
-#endif
-		public static async Task<ParsedMessage> FromStreamReaderAsync(StreamReader stream, MessageVersion version)
+		public static async Task<ParsedMessage> FromStreamAsync(Stream stream, Encoding readEncoding, MessageVersion version, CancellationToken ct)
 		{
 			if (stream == null)
 			{
@@ -50,11 +49,40 @@ namespace SoapCore
 				throw new ArgumentNullException(nameof(version));
 			}
 
+			var pipe = new Pipe();
+
+			var reader = new StreamReader(pipe.Reader.AsStream(), readEncoding);
+
 #if NETCOREAPP3_0_OR_GREATER
-			var envelope = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+			var envelopeTask = XDocument.LoadAsync(reader, LoadOptions.None, ct);
+			await stream.CopyToAsync(pipe.Writer.AsStream(), ct);
 #else
-			var envelope = XDocument.Load(stream);
+			var envelopeTask = Task.Factory.StartNew(() => { return XDocument.Load(reader); }, ct);
+
+			byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
+			try
+			{
+				var writeStream = pipe.Writer.AsStream();
+				while (true)
+				{
+					int readBytes = await stream.ReadAsync(buffer, 0, buffer.Length, ct);
+					if (readBytes == 0)
+					{
+						break;
+					}
+
+					await writeStream.WriteAsync(buffer, 0, readBytes, ct);
+				}
+			}
+			finally
+			{
+				ArrayPool<byte>.Shared.Return(buffer);
+			}
 #endif
+			await pipe.Writer.CompleteAsync();
+
+			var envelope = await envelopeTask;
+
 			var headers = ExtractSoapHeaders(envelope, version);
 
 			//var properties = ExtractSoapProperties(httpRequest);
@@ -62,9 +90,6 @@ namespace SoapCore
 
 			return new ParsedMessage(headers, new MessageProperties(), version, body, isEmpty);
 		}
-#if !NETCOREAPP3_0_OR_GREATER
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-#endif
 
 		public XDocument GetBodyAsXDocument()
 		{

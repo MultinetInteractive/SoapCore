@@ -224,21 +224,12 @@ namespace SoapCore
 					if (messageEncoder.IsContentTypeSupported(multipartSection.ContentType, true)
 						|| messageEncoder.IsContentTypeSupported(multipartSection.ContentType, false))
 					{
-						return await messageEncoder.ReadMessageAsync(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType);
+						return await messageEncoder.ReadMessageAsync(multipartSection.Body, messageEncoder.MaxSoapHeaderSize, multipartSection.ContentType, httpContext.RequestAborted);
 					}
 				}
 			}
 
-#if !NETCOREAPP3_0_OR_GREATER
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
-#else
-			if (httpContext.Request.Body is FileBufferingReadStream)
-			{
-				return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
-			}
-
-			return await messageEncoder.ReadMessageAsync(httpContext.Request.BodyReader, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType);
-#endif
+			return await messageEncoder.ReadMessageAsync(httpContext.Request.Body, messageEncoder.MaxSoapHeaderSize, httpContext.Request.ContentType, httpContext.RequestAborted);
 		}
 
 		private async Task ProcessMeta(HttpContext httpContext, bool showDocumentation)
@@ -943,6 +934,14 @@ namespace SoapCore
 			else if (exception is ConnectionResetException)
 			{
 				status = StatusCodes.Status400BadRequest;
+			}
+			else if (exception is OperationCanceledException)
+			{
+#if NET8_0_OR_GREATER
+				status = StatusCodes.Status499ClientClosedRequest;
+#else
+				status = StatusCodes.Status408RequestTimeout;
+#endif
 			}
 
 			return CreateErrorResponseMessage(exception, status, serviceProvider, requestMessage, messageEncoder, httpContext);
