@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.ServiceModel.Channels;
 using System.Text;
 using System.Threading;
@@ -77,13 +78,22 @@ namespace SoapCore
 
 		protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
 		{
-			using (var reader = GetReaderAtBodyContents())
+			ResetMessageConsumed();
+
+			using (var reader = InternalGetReaderAtBodyContents())
 			{
 				writer.WriteNode(reader, true);
 			}
 		}
 
 		protected override XmlDictionaryReader OnGetReaderAtBodyContents()
+		{
+			ResetMessageConsumed();
+
+			return InternalGetReaderAtBodyContents();
+		}
+
+		private XmlDictionaryReader InternalGetReaderAtBodyContents()
 		{
 			var reader = new XDocumentXmlReader(_body);
 
@@ -174,6 +184,20 @@ namespace SoapCore
 			}
 
 			return properties;
+		}
+
+		private void ResetMessageConsumed()
+		{
+			var stateField = typeof(Message).GetProperty("State");
+			if (stateField != null)
+			{
+				// Set the state to 'Created' to allow reuse
+				stateField.SetValue(this, MessageState.Created);
+			}
+			else
+			{
+				throw new InvalidOperationException("Unable to access the internal state field.");
+			}
 		}
 	}
 }
