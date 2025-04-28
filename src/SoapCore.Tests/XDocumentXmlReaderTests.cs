@@ -67,7 +67,7 @@ namespace SoapCore.Tests
   </soapenv:Body>
 </soapenv:Envelope>
 ";
-			ParsedMessage pm = await ParsedMessage.FromStreamReaderAsync(new MemoryStream(Encoding.Default.GetBytes(body)), Encoding.Default, MessageVersion.Soap12, CancellationToken.None);
+			ParsedMessage pm = await ParsedMessage.FromStreamAsync(new MemoryStream(Encoding.Default.GetBytes(body)), Encoding.Default, MessageVersion.Soap12, CancellationToken.None);
 
 			var dw = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(new MemoryStream()));
 

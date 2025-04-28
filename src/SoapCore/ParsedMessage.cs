@@ -37,7 +37,7 @@ namespace SoapCore
 
 		public override bool IsEmpty => _isEmpty;
 
-		public static async Task<ParsedMessage> FromStreamReaderAsync(Stream stream, Encoding readEncoding, MessageVersion version, CancellationToken ct)
+		public static async Task<ParsedMessage> FromStreamAsync(Stream stream, Encoding readEncoding, MessageVersion version, CancellationToken ct)
 		{
 			if (stream == null)
 			{

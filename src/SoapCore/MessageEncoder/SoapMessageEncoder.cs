@@ -146,7 +146,7 @@ namespace SoapCore.MessageEncoder
 				readEncoding = _writeEncoding;
 			}
 
-			message = await ParsedMessage.FromStreamReaderAsync(stream, readEncoding, MessageVersion, ct);
+			message = await ParsedMessage.FromStreamAsync(stream, readEncoding, MessageVersion, ct);
 
 			return message;
 		}
