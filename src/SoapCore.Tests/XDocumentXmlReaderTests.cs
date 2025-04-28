@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel.Channels;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -66,7 +67,7 @@ namespace SoapCore.Tests
   </soapenv:Body>
 </soapenv:Envelope>
 ";
-			ParsedMessage pm = await ParsedMessage.FromStreamReaderAsync(new StreamReader(new MemoryStream(Encoding.Default.GetBytes(body))), MessageVersion.Soap12);
+			ParsedMessage pm = await ParsedMessage.FromStreamReaderAsync(new MemoryStream(Encoding.Default.GetBytes(body)), Encoding.Default, MessageVersion.Soap12, CancellationToken.None);
 
 			var dw = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(new MemoryStream()));
 
