@@ -112,7 +112,7 @@ namespace SoapCore
 
 					if (getRequest)
 					{
-						if (!string.IsNullOrWhiteSpace(remainingPath))
+						if (!string.IsNullOrWhiteSpace(remainingPath) && remainingPath != "/")
 						{
 							await ProcessHttpOperation(httpContext, scopedServiceProvider, remainingPath.Value.Trim('/'));
 						}
@@ -141,7 +141,7 @@ namespace SoapCore
 					}
 					else
 					{
-						if (!string.IsNullOrWhiteSpace(remainingPath))
+						if (!string.IsNullOrWhiteSpace(remainingPath) && remainingPath != "/")
 						{
 							if ((httpContext.Request.IsHttps && !_options.HttpsPostEnabled) || (!httpContext.Request.IsHttps && !_options.HttpPostEnabled))
 							{
